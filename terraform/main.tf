@@ -45,7 +45,11 @@ variable "region" {
 variable "peer_size" {
   description = "Droplet size for the 3 federation peers."
   type        = string
-  default     = "s-2vcpu-4gb"
+  # 8 GB required: `cargo build --release` of ai-memory-mcp with all
+  # deps (candle-transformers, sqlx, rmcp) peaks above 4 GB during
+  # linking, OOM-killing rustc on `s-2vcpu-4gb`. Run 4 confirmed
+  # this empirically — all 4 droplets silently failed cloud-init.
+  default = "s-4vcpu-8gb"
 }
 
 variable "chaos_size" {

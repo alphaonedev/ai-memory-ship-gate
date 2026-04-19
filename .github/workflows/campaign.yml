@@ -80,22 +80,42 @@ jobs:
           NODE_C_IP=$(jq -r '.peer_nodes.value["node-c"].public' terraform-output.json)
           CHAOS_IP=$(jq -r '.chaos_client.value' terraform-output.json)
 
-          for ip in $NODE_A_IP $NODE_B_IP $NODE_C_IP $CHAOS_IP; do
-            echo "waiting for $ip"
+          # Poll each droplet for readiness; on timeout, dump the
+          # droplet's cloud-init log for diagnosis and fail the step.
+          # Previous run 4 had a silent false-positive here — the loop
+          # exited normally when droplets never became ready.
+          failed=0
+          for role in a:$NODE_A_IP b:$NODE_B_IP c:$NODE_C_IP chaos:$CHAOS_IP; do
+            key=${role%%:*}; ip=${role##*:}
+            echo "::group::poll node-$key ($ip)"
+            ready=false
             for attempt in $(seq 1 60); do
               if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
-                   root@"$ip" "test -f /etc/ai-memory/ready" 2>/dev/null; then
-                echo "$ip ready"
+                   root@"$ip" "test -f /etc/ai-memory/ready && command -v ai-memory && ai-memory --version" \
+                   2>/dev/null; then
+                echo "node-$key ready after ${attempt}×15s"
+                ready=true
                 break
               fi
               sleep 15
             done
+            echo "::endgroup::"
+            if [ "$ready" = false ]; then
+              echo "::error::node-$key ($ip) never became ready — cloud-init build probably failed"
+              # Pull the last 100 lines of cloud-init log for diagnosis.
+              ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
+                   root@"$ip" "tail -n 100 /var/log/cloud-init-output.log" \
+                   2>&1 | sed "s/^/[node-$key cloud-init] /" || true
+              failed=1
+            fi
           done
 
           echo "node_a=$NODE_A_IP"  >> "$GITHUB_OUTPUT"
           echo "node_b=$NODE_B_IP"  >> "$GITHUB_OUTPUT"
           echo "node_c=$NODE_C_IP"  >> "$GITHUB_OUTPUT"
           echo "chaos=$CHAOS_IP"   >> "$GITHUB_OUTPUT"
+
+          exit $failed
 
       - name: Phase 1 — functional on each node
         run: |

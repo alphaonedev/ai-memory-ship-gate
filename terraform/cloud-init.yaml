@@ -72,6 +72,15 @@ write_files:
       #!/usr/bin/env bash
       set -euo pipefail
       REF="$${1:-main}"
+      # 8 GB swap as defense-in-depth — rustc linking can spike above
+      # physical RAM even on s-4vcpu-8gb with candle-transformers.
+      if [ ! -f /swapfile ]; then
+        fallocate -l 8G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      fi
       cd /opt
       rm -rf ai-memory-mcp
       git clone https://github.com/alphaonedev/ai-memory-mcp.git
@@ -81,9 +90,19 @@ write_files:
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
         sh -s -- -y --default-toolchain 1.88 --profile minimal
       export PATH="$HOME/.cargo/bin:$PATH"
-      cargo build --release
+      # CARGO_BUILD_JOBS=2 caps concurrent rustc invocations even on
+      # 4 vCPU — peak memory scales with the number of parallel
+      # codegen units more than with CPU count.
+      CARGO_BUILD_JOBS=2 cargo build --release
       install -m 0755 target/release/ai-memory /usr/local/bin/ai-memory
       /usr/local/bin/ai-memory --version > /etc/ai-memory/version
+      # Only publish the readiness marker if the binary is actually
+      # invocable. The orchestrator polls this file; a partial failure
+      # that still touched /etc/ai-memory/ready would give a false-
+      # positive readiness signal (run 4 was bitten by this).
+      command -v ai-memory >/dev/null
+      ai-memory --version >/dev/null
+      touch /etc/ai-memory/ready
 
 runcmd:
   # Enable docker.
@@ -92,11 +111,11 @@ runcmd:
   # Install dead-man switch FIRST (cost ceiling takes priority).
   - systemctl enable --now ai-memory-dead-man-switch.service
 
-  # Build ai-memory from the given ref.
+  # Build ai-memory from the given ref. The readiness marker is now
+  # touched INSIDE the build script, after a sanity check that the
+  # binary is on PATH and responds to --version. If the build fails,
+  # /etc/ai-memory/ready is never created.
   - /usr/local/sbin/ai-memory-build-from-ref ${ai_memory_git_ref}
-
-  # Publish readiness marker — orchestrator polls for this.
-  - touch /etc/ai-memory/ready
 
   # Basic hardening on the SSH surface.
   - ufw allow 22/tcp
