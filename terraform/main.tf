@@ -85,6 +85,15 @@ locals {
   ]
 }
 
+# Explicit VPC per campaign. DO's default VPC resolution can fail for
+# fresh accounts / fresh regions; owning the VPC ourselves makes the
+# terraform plan deterministic and lets us tear it down cleanly.
+resource "digitalocean_vpc" "campaign" {
+  name     = "aim-${local.campaign_tag}-vpc"
+  region   = var.region
+  ip_range = "10.250.0.0/20"
+}
+
 # Per-node cloud-init: installs ai-memory from the given git ref,
 # sets up the systemd units, and installs the dead-man switch.
 locals {
@@ -104,6 +113,7 @@ resource "digitalocean_droplet" "peer" {
   size     = var.peer_size
   ssh_keys = [var.ssh_key_fingerprint]
   tags     = local.tags
+  vpc_uuid = digitalocean_vpc.campaign.id
 
   user_data = local.cloud_init
 
@@ -119,6 +129,7 @@ resource "digitalocean_droplet" "chaos_client" {
   size     = var.chaos_size
   ssh_keys = [var.ssh_key_fingerprint]
   tags     = concat(local.tags, ["chaos-client"])
+  vpc_uuid = digitalocean_vpc.campaign.id
 
   user_data = local.cloud_init
 }
