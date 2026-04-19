@@ -1,0 +1,49 @@
+site_name: ai-memory ship-gate
+site_description: >-
+  Peer-reviewable, reproducible release-testing infrastructure for
+  ai-memory-mcp. Multi-agent / multi-node / chaos testing on real
+  DigitalOcean infrastructure, with per-campaign artefacts published
+  to this site.
+site_url: https://alphaonedev.github.io/ai-memory-ship-gate/
+repo_url: https://github.com/alphaonedev/ai-memory-ship-gate
+repo_name: alphaonedev/ai-memory-ship-gate
+copyright: "Copyright &copy; 2026 AlphaOne LLC. Apache-2.0."
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.instant
+    - navigation.sections
+    - navigation.indexes
+    - toc.integrate
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+
+nav:
+  - Home: index.md
+  - Methodology: methodology.md
+  - Phases:
+      - Phase 1 — functional: phases/phase1.md
+      - Phase 2 — federation: phases/phase2.md
+      - Phase 3 — migration: phases/phase3.md
+      - Phase 4 — chaos: phases/phase4.md
+  - Campaign runs: runs/
+  - Reproducing: reproducing.md
+  - Security: security.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

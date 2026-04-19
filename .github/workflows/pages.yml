@@ -1,0 +1,63 @@
+name: Publish GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "runs/**"
+      - ".github/workflows/pages.yml"
+  workflow_run:
+    workflows: ["Ship-gate campaign"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install mkdocs-material
+        run: pip install mkdocs-material mkdocs-macros-plugin
+
+      - name: Generate per-campaign pages from runs/
+        run: |
+          mkdir -p docs/runs
+          for dir in runs/*/; do
+            name=$(basename "$dir")
+            summary="$dir/campaign-summary.json"
+            [ -f "$summary" ] || continue
+            out="docs/runs/${name}.md"
+            {
+              echo "# Campaign $name"
+              echo
+              jq -r '. | "* **ai-memory ref**: \(.ai_memory_git_ref)\n* **Completed at**: \(.completed_at)\n* **Overall pass**: \(.overall_pass)\n"' "$summary"
+              echo "## Phases"
+              echo
+              jq -r '.phases[] | "### Phase \(.phase) — \(if .pass then "PASS" else "FAIL" end)\n\n```json\n\(.|tojson|fromjson|tostring|.[:1500])\n```\n"' "$summary"
+            } > "$out"
+          done
+
+      - name: Build site
+        run: mkdocs build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

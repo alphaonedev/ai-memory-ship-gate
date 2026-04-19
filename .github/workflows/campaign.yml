@@ -1,0 +1,173 @@
+name: Ship-gate campaign
+
+on:
+  workflow_dispatch:
+    inputs:
+      ai_memory_git_ref:
+        description: "ai-memory-mcp git ref to validate"
+        required: true
+        default: "release/v0.6.0"
+      campaign_id:
+        description: "Campaign identifier (becomes the runs/ dir name)"
+        required: true
+        default: "v0.6.0.0-candidate"
+      region:
+        description: "DigitalOcean region"
+        required: false
+        default: "nyc3"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  # Only one campaign at a time — DO quota + Terraform state.
+  group: ship-gate-campaign
+  cancel-in-progress: false
+
+jobs:
+  campaign:
+    name: "Provision + run all 4 phases"
+    runs-on: ubuntu-latest
+    timeout-minutes: 300  # 5 hours hard cap on the workflow itself
+    env:
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      DIGITALOCEAN_SSH_KEY_FINGERPRINT: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
+      TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      TF_VAR_ssh_key_fingerprint: ${{ secrets.DIGITALOCEAN_SSH_KEY_FINGERPRINT }}
+      TF_VAR_campaign_id: ${{ github.event.inputs.campaign_id }}
+      TF_VAR_ai_memory_git_ref: ${{ github.event.inputs.ai_memory_git_ref }}
+      TF_VAR_region: ${{ github.event.inputs.region }}
+      CAMPAIGN_ID: ${{ github.event.inputs.campaign_id }}
+      AI_MEMORY_GIT_REF: ${{ github.event.inputs.ai_memory_git_ref }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up SSH private key
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DIGITALOCEAN_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+
+      - name: Install tooling (terraform, doctl, jq, ssh)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Install doctl
+        run: |
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.120.0/doctl-1.120.0-linux-amd64.tar.gz \
+            | tar -xz
+          sudo install -m 0755 doctl /usr/local/bin/doctl
+          doctl auth init --access-token "$DIGITALOCEAN_TOKEN"
+
+      - name: Terraform init + apply
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+          terraform output -json > ../terraform-output.json
+
+      - name: Poll droplet readiness
+        id: wait
+        run: |
+          set -e
+          NODE_A_IP=$(jq -r '.peer_nodes.value["node-a"].public' terraform-output.json)
+          NODE_B_IP=$(jq -r '.peer_nodes.value["node-b"].public' terraform-output.json)
+          NODE_C_IP=$(jq -r '.peer_nodes.value["node-c"].public' terraform-output.json)
+          CHAOS_IP=$(jq -r '.chaos_client.value' terraform-output.json)
+
+          for ip in $NODE_A_IP $NODE_B_IP $NODE_C_IP $CHAOS_IP; do
+            echo "waiting for $ip"
+            for attempt in $(seq 1 60); do
+              if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
+                   root@"$ip" "test -f /etc/ai-memory/ready" 2>/dev/null; then
+                echo "$ip ready"
+                break
+              fi
+              sleep 15
+            done
+          done
+
+          echo "node_a=$NODE_A_IP"  >> "$GITHUB_OUTPUT"
+          echo "node_b=$NODE_B_IP"  >> "$GITHUB_OUTPUT"
+          echo "node_c=$NODE_C_IP"  >> "$GITHUB_OUTPUT"
+          echo "chaos=$CHAOS_IP"   >> "$GITHUB_OUTPUT"
+
+      - name: Phase 1 — functional on each node
+        run: |
+          mkdir -p phase-reports
+          for role in a:${{ steps.wait.outputs.node_a }} \
+                      b:${{ steps.wait.outputs.node_b }} \
+                      c:${{ steps.wait.outputs.node_c }}; do
+            key=${role%%:*}; ip=${role##*:}
+            echo "::group::phase1 node-$key"
+            ssh -o StrictHostKeyChecking=no root@"$ip" 'bash -s' \
+              < scripts/phase1_functional.sh \
+              > phase-reports/phase1-node-$key.json
+            echo "::endgroup::"
+          done
+
+      - name: Phase 2 — multi-agent federation
+        run: |
+          scp -o StrictHostKeyChecking=no scripts/phase2_multiagent.sh \
+            root@${{ steps.wait.outputs.chaos }}:/root/phase2.sh
+          ssh -o StrictHostKeyChecking=no root@${{ steps.wait.outputs.chaos }} \
+            "NODE_A_IP=${{ steps.wait.outputs.node_a }} \
+             NODE_B_IP=${{ steps.wait.outputs.node_b }} \
+             NODE_C_IP=${{ steps.wait.outputs.node_c }} \
+             bash /root/phase2.sh" \
+             > phase-reports/phase2.json
+
+      - name: Phase 3 — migration roundtrip
+        run: |
+          scp -o StrictHostKeyChecking=no scripts/phase3_migration.sh \
+            root@${{ steps.wait.outputs.node_a }}:/root/phase3.sh
+          ssh -o StrictHostKeyChecking=no root@${{ steps.wait.outputs.node_a }} \
+            "bash /root/phase3.sh" > phase-reports/phase3.json
+
+      - name: Phase 4 — chaos campaign
+        run: |
+          scp -o StrictHostKeyChecking=no scripts/phase4_chaos.sh \
+            root@${{ steps.wait.outputs.chaos }}:/root/phase4.sh
+          ssh -o StrictHostKeyChecking=no root@${{ steps.wait.outputs.chaos }} \
+            "NODE_A_IP=${{ steps.wait.outputs.node_a }} \
+             NODE_B_IP=${{ steps.wait.outputs.node_b }} \
+             NODE_C_IP=${{ steps.wait.outputs.node_c }} \
+             bash /root/phase4.sh" \
+             > phase-reports/phase4.json
+
+      - name: Aggregate campaign summary
+        run: |
+          CAMPAIGN_ID="${{ github.event.inputs.campaign_id }}" \
+          AI_MEMORY_GIT_REF="${{ github.event.inputs.ai_memory_git_ref }}" \
+            bash scripts/collect_reports.sh \
+              campaign-summary.json phase-reports
+
+      - name: Commit campaign artefacts
+        if: always()
+        run: |
+          mkdir -p "runs/${{ github.event.inputs.campaign_id }}"
+          cp phase-reports/*.json "runs/${{ github.event.inputs.campaign_id }}/" || true
+          cp campaign-summary.json "runs/${{ github.event.inputs.campaign_id }}/" || true
+          git config user.name "ship-gate-bot"
+          git config user.email "ship-gate-bot@users.noreply.github.com"
+          git add "runs/${{ github.event.inputs.campaign_id }}"
+          git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artefacts" || true
+          git push || true
+
+      - name: Tear down infrastructure
+        if: always()
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve || true
+
+      - name: Final verdict
+        if: always()
+        run: |
+          VERDICT=$(jq '.overall_pass' campaign-summary.json 2>/dev/null || echo false)
+          echo "Overall pass: $VERDICT"
+          [ "$VERDICT" = "true" ]

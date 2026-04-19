@@ -1,0 +1,49 @@
+name: Campaign run tracking
+description: Track a ship-gate campaign against a specific ai-memory-mcp release candidate
+title: "[ship-gate] "
+labels: ["campaign"]
+body:
+  - type: input
+    id: ref
+    attributes:
+      label: ai-memory-mcp git ref
+      description: Branch, tag, or full SHA of the release candidate being validated
+      placeholder: "release/v0.6.0 (or 21a457f...)"
+    validations:
+      required: true
+
+  - type: input
+    id: campaign-id
+    attributes:
+      label: Campaign ID
+      description: The identifier used for the workflow run + committed artefact path
+      placeholder: "v0.6.0.0-candidate-01"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: phases
+    attributes:
+      label: Phases
+      options:
+        - label: Phase 1 — functional on all three droplets
+        - label: Phase 2 — multi-agent / multi-node federation
+        - label: Phase 3 — cross-backend migration round-trip
+        - label: Phase 4 — chaos campaign (4 fault classes)
+        - label: Overall verdict
+        - label: Artefacts committed to `runs/<campaign-id>/`
+        - label: Pages site updated
+        - label: Infrastructure torn down (DO dashboard verified empty)
+
+  - type: textarea
+    id: verdict
+    attributes:
+      label: Verdict
+      description: Pass / fail per phase + overall. Paste the `campaign-summary.json` highlights.
+      render: text
+
+  - type: textarea
+    id: followups
+    attributes:
+      label: Follow-ups
+      description: Bugs, regressions, runbook fixes, or feature gaps observed.

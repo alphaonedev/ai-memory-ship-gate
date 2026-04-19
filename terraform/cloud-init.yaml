@@ -1,0 +1,110 @@
+#cloud-config
+# Copyright 2026 AlphaOne LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+# Bootstraps each droplet in the ship-gate campaign:
+# - install base packages (rust, docker, jq, curl, ufw)
+# - clone + build ai-memory at the specified git ref
+# - install a systemd timer that self-destroys the droplet after
+#   ${dead_man_switch_hours} hours as a cost-ceiling safety net
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - build-essential
+  - pkg-config
+  - libssl-dev
+  - ca-certificates
+  - curl
+  - git
+  - jq
+  - docker.io
+  - docker-compose-v2
+  - iptables
+  - ufw
+  - htop
+  - sqlite3
+
+write_files:
+  - path: /etc/ai-memory/build.env
+    permissions: "0644"
+    content: |
+      AI_MEMORY_GIT_REF=${ai_memory_git_ref}
+      CAMPAIGN_ID=${campaign_id}
+      DEAD_MAN_SWITCH_HOURS=${dead_man_switch_hours}
+
+  # Dead-man switch: at boot, schedule a `poweroff -f` at +N hours.
+  # Also publishes the absolute timestamp to /etc/ai-memory/tombstone
+  # so the orchestrator can tell if a droplet is close to expiry.
+  - path: /usr/local/sbin/ai-memory-dead-man-switch
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      HOURS="$${1:-${dead_man_switch_hours}}"
+      TOMB=$(date -u -d "+$${HOURS} hours" +%s)
+      echo "$${TOMB}" > /etc/ai-memory/tombstone
+      # Use `shutdown -P +MINUTES` so it's cancellable. The orchestrator
+      # cancels via `shutdown -c` before tearing down with terraform.
+      MINS=$((HOURS * 60))
+      shutdown -P "+$${MINS}" "ai-memory ship-gate dead-man switch (max uptime=$${HOURS}h)"
+
+  - path: /etc/systemd/system/ai-memory-dead-man-switch.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=ai-memory ship-gate dead-man switch
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      EnvironmentFile=/etc/ai-memory/build.env
+      ExecStart=/usr/local/sbin/ai-memory-dead-man-switch $DEAD_MAN_SWITCH_HOURS
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /usr/local/sbin/ai-memory-build-from-ref
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      REF="$${1:-main}"
+      cd /opt
+      rm -rf ai-memory-mcp
+      git clone https://github.com/alphaonedev/ai-memory-mcp.git
+      cd ai-memory-mcp
+      git checkout "$${REF}"
+      # Install rustup toolchain matching repo MSRV (pinned at 1.88).
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+        sh -s -- -y --default-toolchain 1.88 --profile minimal
+      export PATH="$HOME/.cargo/bin:$PATH"
+      cargo build --release
+      install -m 0755 target/release/ai-memory /usr/local/bin/ai-memory
+      /usr/local/bin/ai-memory --version > /etc/ai-memory/version
+
+runcmd:
+  # Enable docker.
+  - systemctl enable --now docker.service
+
+  # Install dead-man switch FIRST (cost ceiling takes priority).
+  - systemctl enable --now ai-memory-dead-man-switch.service
+
+  # Build ai-memory from the given ref.
+  - /usr/local/sbin/ai-memory-build-from-ref ${ai_memory_git_ref}
+
+  # Publish readiness marker — orchestrator polls for this.
+  - touch /etc/ai-memory/ready
+
+  # Basic hardening on the SSH surface.
+  - ufw allow 22/tcp
+  - ufw allow 9077/tcp
+  - ufw --force enable
+
+final_message: |
+  ai-memory ship-gate droplet ready.
+  Campaign: ${campaign_id}
+  ai-memory ref: ${ai_memory_git_ref}
+  Dead-man switch: ${dead_man_switch_hours} hours from $(date -u).

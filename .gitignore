@@ -1,0 +1,44 @@
+# Secrets — NEVER commit.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Terraform state can leak cloud resource identifiers and sensitive
+# cookie/session data. Keep local state out of git.
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
+
+# SSH keypairs generated for campaign runs.
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Campaign outputs — present-campaign dir ONLY committed via the
+# Actions workflow to a timestamped path; local runs stay out.
+/runs/local-*/
+*.log
+*.tmp
+
+# Rust build artefacts (if someone runs cargo here).
+target/
+
+# Node / mkdocs / hugo build artefacts for the Pages site.
+node_modules/
+site/
+public/
+_site/
+
+# Editor + OS files.
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
