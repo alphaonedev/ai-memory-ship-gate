@@ -75,10 +75,12 @@ provider "digitalocean" {
 }
 
 locals {
+  # DO tags accept only [a-z0-9:_-]; strip anything else from campaign_id.
+  campaign_tag = replace(replace(var.campaign_id, ".", "-"), "/", "-")
   tags = [
     "ai-memory",
     "ship-gate",
-    "campaign-${var.campaign_id}",
+    "campaign-${local.campaign_tag}",
     "auto-destroy",
   ]
 }
@@ -97,7 +99,7 @@ resource "digitalocean_droplet" "peer" {
   for_each = toset(["a", "b", "c"])
 
   image    = "ubuntu-24-04-x64"
-  name     = "aim-${var.campaign_id}-node-${each.key}"
+  name     = "aim-${local.campaign_tag}-node-${each.key}"
   region   = var.region
   size     = var.peer_size
   ssh_keys = [var.ssh_key_fingerprint]
@@ -112,7 +114,7 @@ resource "digitalocean_droplet" "peer" {
 
 resource "digitalocean_droplet" "chaos_client" {
   image    = "ubuntu-24-04-x64"
-  name     = "aim-${var.campaign_id}-chaos"
+  name     = "aim-${local.campaign_tag}-chaos"
   region   = var.region
   size     = var.chaos_size
   ssh_keys = [var.ssh_key_fingerprint]
@@ -122,7 +124,7 @@ resource "digitalocean_droplet" "chaos_client" {
 }
 
 resource "digitalocean_firewall" "peer_mesh" {
-  name = "aim-${var.campaign_id}-peer-mesh"
+  name = "aim-${local.campaign_tag}-peer-mesh"
   tags = concat(local.tags)
 
   # Inbound: peer-to-peer quorum writes over TLS + ssh for ops.
