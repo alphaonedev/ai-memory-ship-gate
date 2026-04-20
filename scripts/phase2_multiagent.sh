@@ -75,23 +75,39 @@ done
 # All curls go to private IPs; chaos's private IP is the source and
 # is in the firewall allow-list.
 log "write burst: 4 agents × 50 writes"
-OK=0; FAIL=0; QNM=0
+# Subshell-safe counters: each backgrounded agent appends its per-write
+# status code to a tmpfile; the parent tallies after `wait`.
+CODES_FILE=$(mktemp)
+# Log ONE sample write's response body so we can debug when counts are 0.
+SAMPLE_FILE=$(mktemp)
 for AGENT in "${AGENTS[@]}"; do
   for i in $(seq 1 "$WRITES_PER_AGENT"); do
-    CODE=$(curl -sS -o /tmp/resp.json -w '%{http_code}' \
+    CODE=$(curl -sS -o /tmp/resp-$AGENT-$i.json -w '%{http_code}' \
       -H "X-Agent-Id: $AGENT" \
       -H "Content-Type: application/json" \
       -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
       -d "{\"tier\":\"mid\",\"namespace\":\"$NS\",\"title\":\"$AGENT-w$i\",\"content\":\"multi-agent write $AGENT seq $i\",\"priority\":5,\"confidence\":1.0,\"source\":\"ship-gate\",\"metadata\":{}}" \
       2>/dev/null || echo 000)
-    case "$CODE" in
-      201) OK=$((OK+1));;
-      503) QNM=$((QNM+1));;
-      *)   FAIL=$((FAIL+1));;
-    esac
+    echo "$CODE" >> "$CODES_FILE"
+    # Capture first write's response body for diagnosis.
+    if [ "$AGENT" = "ai:agent-alice" ] && [ "$i" = "1" ]; then
+      cp "/tmp/resp-$AGENT-$i.json" "$SAMPLE_FILE" 2>/dev/null || true
+    fi
   done &
 done
 wait
+
+OK=$(grep -c '^201$' "$CODES_FILE" || echo 0)
+QNM=$(grep -c '^503$' "$CODES_FILE" || echo 0)
+FAIL=$(($(wc -l < "$CODES_FILE") - OK - QNM))
+log "burst totals: OK=$OK  QNM=$QNM  FAIL=$FAIL (total=$(wc -l < "$CODES_FILE"))"
+log "code distribution:"
+sort "$CODES_FILE" | uniq -c | while read count code; do
+  log "  $code: $count"
+done
+log "sample response body (first write):"
+head -c 500 "$SAMPLE_FILE" | sed 's/^/  /' >&2
+echo >&2
 
 # ---- Settle period ---------------------------------------------
 # 30s is three sync-daemon cycles at default 10s cadence — enough
@@ -103,13 +119,17 @@ log "settle ${SETTLE_SECS}s for sync-daemon convergence"
 sleep "$SETTLE_SECS"
 
 # ---- Convergence check -----------------------------------------
+# Also pull total stats + namespace list for diagnosis when namespace
+# filter returns 0 unexpectedly.
 declare -A COUNTS
 for role in A:"$NODE_A_PRIV" B:"$NODE_B_PRIV" C:"$NODE_C_PRIV"; do
   key=${role%%:*}; ip=${role##*:}
   n=$(curl -sS "http://$ip:9077/api/v1/memories?namespace=$NS&limit=1000" \
       | jq '.memories | length' 2>/dev/null || echo 0)
   COUNTS[$key]=$n
-  log "node-$key count: $n"
+  total=$(curl -sS "http://$ip:9077/api/v1/stats" 2>/dev/null | jq '.total' 2>/dev/null || echo "?")
+  ns_list=$(curl -sS "http://$ip:9077/api/v1/namespaces" 2>/dev/null | jq -c '.' 2>/dev/null || echo "?")
+  log "node-$key count(ns=$NS)=$n  stats.total=$total  namespaces=$ns_list"
 done
 
 # ---- Quorum-not-met probe --------------------------------------
