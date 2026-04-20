@@ -4,55 +4,136 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Campaign v0.6.0.0-final — ai-memory ship-gate</title>
-  <meta name="description" content="Per-phase evidence for ai-memory-mcp ship-gate campaign v0.6.0.0-final (ref release/v0.6.0).">
+  <meta name="description" content="AI NHI analysis + per-phase evidence for ai-memory-mcp ship-gate campaign v0.6.0.0-final (ref release/v0.6.0).">
   <style>
     :root {
       --fg: #1a1a1a; --bg: #fff; --muted: #666;
       --pass: #1a8b3c; --fail: #b32222; --pass-bg: #e6f6ea; --fail-bg: #fceaea;
-      --border: #e0e0e0; --code-bg: #f7f7f9;
+      --border: #e0e0e0; --code-bg: #f7f7f9; --accent: #3952c8; --accent-bg: #eef1fd;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --fg: #eaeaea; --bg: #181818; --muted: #a0a0a0;
         --pass: #4adc76; --fail: #ff6a6a; --pass-bg: #153d23; --fail-bg: #401818;
-        --border: #2a2a2a; --code-bg: #202028;
+        --border: #2a2a2a; --code-bg: #202028; --accent: #8da3ff; --accent-bg: #1c2140;
       }
     }
     * { box-sizing: border-box; }
-    body { font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
-    main { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    body { font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
     header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
     header p.crumb { color: var(--muted); font-size: 13px; margin: 0 0 .25rem; }
-    h1 { margin: .25rem 0 .75rem; font-size: 1.75rem; }
-    h2 { margin: 1.5rem 0 .5rem; font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h1 { margin: .25rem 0 .75rem; font-size: 1.85rem; }
+    h2 { margin: 1.75rem 0 .5rem; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h3 { margin: 1.25rem 0 .4rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+    h4 { margin: .5rem 0 .25rem; font-size: 1rem; }
     dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
     dl.meta dt { color: var(--muted); }
     dl.meta dd { margin: 0; }
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
+    .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
+    .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight p.verdict { font-size: 1.05rem; margin: .5rem 0 1rem; }
+    .audiences { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-top: .5rem; }
+    @media (min-width: 720px) { .audiences { grid-template-columns: repeat(3, 1fr); } }
+    .audiences article { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .85rem 1rem; }
+    .audiences article h4 { margin-top: 0; color: var(--accent); font-size: 14px; letter-spacing: .02em; }
+    .audiences article p { margin: .25rem 0 0; font-size: 14px; }
+    ol.bugs { margin: .5rem 0; padding-left: 1.25rem; }
+    ol.bugs > li { margin-bottom: .75rem; }
+    ol.bugs p.bug-title { font-weight: 600; margin: .25rem 0; }
+    ol.bugs p.bug-field { margin: .25rem 0; font-size: 14px; }
+    ol.bugs ul.bug-fixes { margin: .25rem 0 .5rem 1rem; padding: 0; list-style: disc; font-size: 14px; }
+    ul.checklist { list-style: none; padding: 0; margin: .25rem 0 .75rem; }
+    ul.checklist li { padding: .2rem 0 .2rem 0; font-size: 14px; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+    ul.checklist li .check { display: inline-block; width: 1.25rem; text-align: center; font-weight: 700; font-size: 15px; }
+    ul.checklist li.pass .check { color: var(--pass); }
+    ul.checklist li.fail .check { color: var(--fail); }
+    ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
     details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
     details[open] { padding-bottom: .5rem; }
     summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
     pre { background: var(--code-bg); padding: .75rem; border-radius: 6px; overflow-x: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
-    a { color: inherit; }
-    a:hover { color: var(--pass); }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--muted); font-size: 14px; }
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 3rem; }
   </style>
 </head>
 <body>
   <main>
     <header>
-      <p class="crumb"><a href="../">../ runs index</a> · <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/v0.6.0.0-final.html">rendered on Pages</a></p>
-      <h1>Campaign v0.6.0.0-final <span class="badge pass">PASS</span></h1>
+      <p class="crumb"><a href="../">../ runs index</a> &middot; <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/v0.6.0.0-final/">rendered on Pages</a></p>
+      <h1>Campaign v0.6.0.0-final <span class="badge fail">FAIL</span></h1>
       <dl class="meta">
         <dt>ai-memory ref</dt><dd><code>release/v0.6.0</code></dd>
         <dt>Completed at</dt><dd>2026-04-20T03:43:41Z</dd>
-        <dt>Overall pass</dt><dd>true</dd>
+        <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="ai-insight">
+        <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
+        <h2>First "final" attempt — establishes the baseline</h2>
+        <p class="verdict">Ran the protocol end-to-end. Initial baseline for regression tracking.</p>
+        <h3>What this campaign tested</h3>
+        <p>Full four-phase gate on fresh DigitalOcean infrastructure against release/v0.6.0 tip.</p>
+        <h3>What it proved (or disproved)</h3>
+        <p>The campaign workflow, Terraform, and per-phase scripts are coherent enough to execute top-to-bottom and produce artefacts.</p>
+        <h3>For three audiences</h3>
+        <div class="audiences">
+          <article>
+            <h4>Non-technical end users</h4>
+            <p>A baseline. Future runs are judged by whether they get further or regress against this starting point.</p>
+          </article>
+          <article>
+            <h4>C-level decision makers</h4>
+            <p>First candidate tag-worthiness check completed. Per-phase evidence is pinned to the commit SHA. Provenance chain established.</p>
+          </article>
+          <article>
+            <h4>Engineers &amp; architects</h4>
+            <p>Establishes the `runs/` directory convention and the per-phase JSON contract that every subsequent campaign adheres to.</p>
+          </article>
+        </div>
+        <h3>What changed going into the next campaign</h3>
+        <p>Subsequent runs (r10 onward) adopt the runner-driven SSH refactor that both speeds runs up and sharply reduces DO spend.</p>
+      </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <h3>Test results</h3>
+        <h4>node-a</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-b</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-c</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase1-node-a</summary>
           <pre>{
@@ -232,7 +313,18 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 2 </h2>
+        <h2>Phase 2 <span class="badge fail">FAIL</span></h2>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="fail"><span class="check">&#x2717;</span> Burst writes returned 201 <span class="muted">— ok=/ (qnm=, fail=)</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> node-A convergence ≥ 95% of ok <span class="muted">— a= / threshold 0</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> node-B convergence ≥ 95% of ok <span class="muted">— b= / threshold 0</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> node-C convergence ≥ 95% of ok <span class="muted">— c= / threshold 0</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Probe 1: one peer down → 201 (quorum met via remaining peer) <span class="muted">— got </span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Probe 2: both peers down → 503 (quorum_not_met) <span class="muted">— got </span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Overall phase-2 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase2</summary>
           <pre></pre>
@@ -241,6 +333,7 @@
       </section>
     <section>
       <h2>All artefacts</h2>
+      <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
       <ul>
         <li><a href="./campaign-summary.json">campaign-summary.json</a></li>
         <li><a href="./phase1-node-a.json">phase1-node-a.json</a></li>
@@ -251,7 +344,7 @@
     </section>
     <footer>
       Generated by <code>scripts/generate_run_html.sh</code>.
-      Repository:
+      Campaign directory:
       <a href="https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/v0.6.0.0-final">
         alphaonedev/ai-memory-ship-gate/runs/v0.6.0.0-final
       </a>.
@@ -259,6 +352,7 @@
       <a href="https://alphaonedev.github.io/ai-memory-ship-gate/methodology/">
         alphaonedev.github.io/ai-memory-ship-gate/methodology
       </a>.
+      Analysis data source: <code>analysis/run-insights.json</code>.
     </footer>
   </main>
 </body>

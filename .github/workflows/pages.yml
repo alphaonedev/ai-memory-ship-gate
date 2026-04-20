@@ -62,7 +62,7 @@ jobs:
             echo "Each row links to the mkdocs-rendered campaign page plus the"
             echo "self-contained offline evidence HTML shipped in the repo."
             echo
-            echo "| Campaign | ai-memory ref | Completed | Pass | Evidence |"
+            echo "| Campaign | ai-memory ref | Completed | Outcome | Evidence |"
             echo "|---|---|---|---|---|"
           } > docs/runs/index.md
           # List newest first — rely on lexicographic sort since
@@ -73,10 +73,43 @@ jobs:
             [ -f "$summary" ] || continue
             ref=$(jq -r '.ai_memory_git_ref // "?"' "$summary")
             completed=$(jq -r '.completed_at // "?"' "$summary")
-            pass=$(jq -r '.overall_pass // false' "$summary")
-            badge=$([ "$pass" = "true" ] && echo "PASS" || echo "FAIL")
+            # Outcome is FAIL unless every required phase produced a
+            # JSON with pass:true AND overall_pass says true. The
+            # collect_reports.sh aggregator historically marked runs
+            # "overall_pass" based on the phases it found, which made
+            # half-completed runs look green. A missing phase is a
+            # FAIL signal here (we required all four to run).
+            # Strict outcome: a phase file counts as PASS only if it
+            # parses as JSON AND .pass == true. Anything else
+            # (missing, parse error, pass:false, missing field) is
+            # FAIL. collect_reports.sh historically wrote
+            # overall_pass:true whenever phases 1+2 produced JSONs,
+            # and several campaigns wrote the phase-4 stdout log to
+            # phase4.json instead of the JSON summary — so
+            # overall_pass alone lies.
+            outcome="PASS"
+            pass_of() {
+              local file="$1"
+              [ -f "$file" ] || { echo "FAIL"; return; }
+              local v
+              v=$(jq -r 'if type == "object" and (.pass == true) then "PASS" else "FAIL" end' "$file" 2>/dev/null)
+              echo "${v:-FAIL}"
+            }
+            summary_pass=$(jq -r '.overall_pass // false' "$summary")
+            [ "$summary_pass" = "true" ] || outcome="FAIL"
+            for p in phase2.json phase3.json phase4.json; do
+              [ "$(pass_of "$dir$p")" = "PASS" ] || { outcome="FAIL"; break; }
+            done
+            p1_ok=true
+            has_p1=false
+            for n in "$dir"phase1-node-*.json; do
+              [ -e "$n" ] || continue
+              has_p1=true
+              [ "$(pass_of "$n")" = "PASS" ] || { p1_ok=false; break; }
+            done
+            [ "$has_p1" = "true" ] && [ "$p1_ok" = "true" ] || outcome="FAIL"
             evidence="[offline HTML](../evidence/${name}/index.html)"
-            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${badge} | ${evidence} |" >> docs/runs/index.md
+            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${outcome} | ${evidence} |" >> docs/runs/index.md
 
             out="docs/runs/${name}.md"
             {
@@ -84,9 +117,9 @@ jobs:
               echo
               echo "- **ai-memory ref**: \`${ref}\`"
               echo "- **Completed at**: ${completed}"
-              echo "- **Overall pass**: ${badge}"
+              echo "- **Outcome**: ${outcome}"
               echo "- **Offline evidence**: [index.html](../evidence/${name}/index.html)"
-              echo "  (self-contained page with every artefact, browsable from a clone of the repo)"
+              echo "  (self-contained page with every artefact plus AI NHI tri-audience analysis)"
               echo
               echo "## Phase summaries"
               echo

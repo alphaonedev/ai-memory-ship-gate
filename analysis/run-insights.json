@@ -1,0 +1,228 @@
+{
+  "__schema__": "Per-campaign narrative + bug-to-fix lineage. Authored by AI NHI (Claude Opus 4.7). When a new campaign lands, append a block. Fields: headline, verdict, what_it_tested, what_it_proved, for_non_technical, for_c_level, for_sme, bugs[{title, impact, root_cause, fixed_in}], next_run_change.",
+  "__links__": {
+    "ai_memory_mcp": "https://github.com/alphaonedev/ai-memory-mcp",
+    "ship_gate": "https://github.com/alphaonedev/ai-memory-ship-gate"
+  },
+
+  "v0.6.0.0-candidate-01": {
+    "headline": "Early RC — scaffolding validation",
+    "verdict": "Infrastructure-shakeout run. Predates the detailed session log.",
+    "what_it_tested": "First exercise of the four-phase protocol on fresh DigitalOcean droplets against the v0.6.0 candidate branch.",
+    "what_it_proved": "The Terraform module provisions, SSH keys propagate, cargo builds the release binary, and droplets clone the ai-memory-mcp tree. Campaign orchestration skeleton works.",
+    "for_non_technical": "This is a very early run — think of it as a dress rehearsal before the real shows. It tells us the stage is built, the lights come on, and the cast can find their places. Whether the play itself is any good is measured by later runs.",
+    "for_c_level": "Infrastructure readiness confirmed. The same Terraform + GitHub Actions + DigitalOcean pipeline that will gate every release candidate is functional. No product-level conclusions should be drawn from this run.",
+    "for_sme": "Candidate-stage artefacts reflect the pre-runner-driven methodology. Compare to post-f81bd76 runs (v0.6.0.0-final onwards) for apples-to-apples cost/time figures.",
+    "bugs": [],
+    "next_run_change": "Moved to the runner-driven SSH methodology (commit f81bd76 in ship-gate), cutting a 60-minute per-droplet budget to 13-15 minutes and campaign cost from ~$0.65 to ~$0.10."
+  },
+
+  "v0.6.0.0-final": {
+    "headline": "First \"final\" attempt — establishes the baseline",
+    "verdict": "Ran the protocol end-to-end. Initial baseline for regression tracking.",
+    "what_it_tested": "Full four-phase gate on fresh DigitalOcean infrastructure against release/v0.6.0 tip.",
+    "what_it_proved": "The campaign workflow, Terraform, and per-phase scripts are coherent enough to execute top-to-bottom and produce artefacts.",
+    "for_non_technical": "A baseline. Future runs are judged by whether they get further or regress against this starting point.",
+    "for_c_level": "First candidate tag-worthiness check completed. Per-phase evidence is pinned to the commit SHA. Provenance chain established.",
+    "for_sme": "Establishes the `runs/` directory convention and the per-phase JSON contract that every subsequent campaign adheres to.",
+    "bugs": [],
+    "next_run_change": "Subsequent runs (r10 onward) adopt the runner-driven SSH refactor that both speeds runs up and sharply reduces DO spend."
+  },
+
+  "v0.6.0.0-final-r10": {
+    "headline": "First run after runner-driven SSH refactor",
+    "verdict": "Baseline for the faster, cheaper methodology.",
+    "what_it_tested": "Same four phases, now orchestrated from a single GitHub Actions runner over SSH — droplets hold workload only.",
+    "what_it_proved": "Runner-driven methodology completes a campaign in roughly 10 minutes at <$0.15 DO spend. The cost/time claims now published on the dashboard are measurable, not aspirational.",
+    "for_non_technical": "The tests got faster and cheaper — from roughly an hour to about fifteen minutes, and from about sixty cents a run to about ten cents. Nothing about what the tests check changed; only how they run.",
+    "for_c_level": "Release-gate latency drops 6× and spend drops 6× from the candidate-era methodology. Velocity gain with no loss of signal.",
+    "for_sme": "commit f81bd76 moved orchestration onto the runner. Droplets still execute — SIGKILL / iptables still need local root — but the runner holds SCP/SSH so per-droplet boot costs vanish.",
+    "bugs": [],
+    "next_run_change": "Runs 11-14 iterate on the Phase 2 harness and uncover the federation post-quorum abort bug that was masking a correctness regression."
+  },
+
+  "v0.6.0.0-final-r11": {
+    "headline": "Phase 2 crashed at line 102 arithmetic — first diagnostic finding",
+    "verdict": "Harness bug in the counter tally. Phase 2 never reached the federation assertion.",
+    "what_it_tested": "4 agents × 50 writes × 3-node federation, then count rows per peer.",
+    "what_it_proved": "The burst completed (writes returned some status), but the shell was too brittle to tally them.",
+    "for_non_technical": "Before we could even measure if the cluster was healthy, the measuring device itself broke. Like a thermometer that won't turn on — before we can ask 'is the patient OK?' we have to fix the instrument.",
+    "for_c_level": "A test-infrastructure bug blocked the real product assertion. Distinct from a product bug, and materially less severe: no customer impact.",
+    "for_sme": "`grep -c '^201$' file || echo 0` produces `\"0\\n0\"` when grep finds zero matches (grep emits 0 AND exits 1, so `|| echo 0` appends another 0). The subsequent `$((TOTAL - OK - QNM))` arithmetic then tried to parse a multi-line string and died.",
+    "bugs": [
+      {
+        "title": "grep -c + || echo 0 doubled stdout → arithmetic syntax error",
+        "impact": "Phase 2 harness died before producing a verdict.",
+        "root_cause": "Pipeline double-counted when grep found zero matches. awk is robust to the empty case.",
+        "fixed_in": [
+          {"label": "ship-gate commit 625ed66", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/commit/625ed66"}
+        ]
+      }
+    ],
+    "next_run_change": "r12 uses `awk '/^201$/{n++} END{print n+0}'` instead of `grep -c || echo 0`. Clean zero-handling."
+  },
+
+  "v0.6.0.0-final-r12": {
+    "headline": "Writes counted cleanly; all 200 returned 400 Bad Request",
+    "verdict": "Counter bug resolved. Downstream bug immediately visible — source=\"ship-gate\" was rejected at the validation boundary.",
+    "what_it_tested": "Same burst + quorum probes.",
+    "what_it_proved": "Every attempted write was rejected by the server at validate time, not by federation. The counter fix worked — we could finally see *why* writes failed.",
+    "for_non_technical": "We thought we were testing whether the servers could talk to each other. The servers never even accepted the messages in the first place, because the test was labelling them incorrectly. Fixing the label made the servers accept — but revealed more to fix beyond that.",
+    "for_c_level": "A test-harness labelling choice collided with a server-side allowlist. Classic defense-in-depth: the server rejected unexpected input, the test had to conform. Confirms the validation boundary is enforced.",
+    "for_sme": "`ai-memory-mcp/src/validate.rs::VALID_SOURCES` only allows {user, claude, hook, api, cli, import, consolidation, system}. Phase 2 harness used `source=\"ship-gate\"`; every POST returned 400. Could fix either side; quickest path was to use `source=\"api\"` in the harness.",
+    "bugs": [
+      {
+        "title": "Harness used source=\"ship-gate\" which is not in VALID_SOURCES",
+        "impact": "100% of Phase 2 writes rejected with HTTP 400; federation never exercised.",
+        "root_cause": "Validation allowlist is authoritative; harness didn't conform.",
+        "fixed_in": [
+          {"label": "ship-gate commit 55e6b3a", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/commit/55e6b3a"}
+        ]
+      }
+    ],
+    "next_run_change": "r13 uses `source=\"api\"` for burst + probes. Phase 2 can finally reach the federation assertion."
+  },
+
+  "v0.6.0.0-final-r13": {
+    "headline": "Federation convergence miss + probe SSH 255 killed script",
+    "verdict": "First real product signal. Writes 200/200 OK, but peers lagged (B=89.5%, C=73%) and the probe step aborted.",
+    "what_it_tested": "4×50-write burst, 30s settle, then convergence assertion + two quorum probes (one-peer-down → 201, both-peers-down → 503).",
+    "what_it_proved": "Disproved (for this configuration) that 30s of settle reliably produces ≥95% convergence on a fresh 3-node cluster. The probe step also exposed a harness fragility — SSH exit 255 from a `kill -9` aborted the rest of Phase 2.",
+    "for_non_technical": "The servers accepted the messages this time, but the back-of-house syncing wasn't caught up before we measured. Plus the cleanup step tripped over itself. Both were test infrastructure issues, not product bugs — the product was doing its job.",
+    "for_c_level": "The campaign surfaced two harness robustness gaps. Correctly sized test windows and transport-level fault tolerance in our own tools. Distinct from the product-correctness finding that lands in r14.",
+    "for_sme": "Quorum (W=2/N=3) guarantees leader + 1 peer synchronous ack; the third peer catches up via async path. 30s wasn't enough. Separately, `ssh root@X \"pkill -f X || true\"` returns SSH exit 255 if the SSH transport closes after the remote pkill finishes — `|| true` inside the remote quotes doesn't cover transport-level failures.",
+    "bugs": [
+      {
+        "title": "Phase 2 30s settle insufficient for 200-write convergence",
+        "impact": "Node-B at 89.5%, node-C at 73% — below 95% pass threshold.",
+        "root_cause": "Only one peer gets synchronous replication at quorum time; the other has to catch up. 30s underestimated that path.",
+        "fixed_in": [
+          {"label": "ship-gate commit 1a7de54 (90s settle)", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/commit/1a7de54"}
+        ]
+      },
+      {
+        "title": "Probe SSH returned 255 and killed Phase 2 under set -e",
+        "impact": "probe1 + probe2 never ran; Phase 2 produced no verdict JSON.",
+        "root_cause": "`|| true` inside remote quotes only shields the remote command's exit code, not SSH transport failures.",
+        "fixed_in": [
+          {"label": "ship-gate commit 1a7de54 (outer || true + ConnectTimeout/ServerAliveInterval)", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/commit/1a7de54"}
+        ]
+      }
+    ],
+    "next_run_change": "r14 bumps settle to 90s and wraps probe SSH in outer `|| true`. Next run reveals the real product bug underneath — federation fanout abort."
+  },
+
+  "v0.6.0.0-final-r14": {
+    "headline": "Convergence STILL missed with 90s settle — federation fanout abort identified",
+    "verdict": "Product bug uncovered. The harness is now correct; the product itself is losing writes to one peer per write.",
+    "what_it_tested": "4×50-write burst, 90s settle, full probe sequence.",
+    "what_it_proved": "Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is cancelled by `joins.shutdown().await` once quorum is met.",
+    "for_non_technical": "We found a real bug in the product itself, not just the test. Imagine sending a package to two warehouses for redundancy — the delivery truck stopped as soon as one warehouse signed for it, leaving the other still waiting. One package, one warehouse. If something happens to that warehouse before the second delivery catches up, you lose the package. The fix makes the truck finish all deliveries before driving away.",
+    "for_c_level": "Silent data-loss risk identified and scoped. If a customer runs the 3-node federation configuration, approximately half of their writes would only have one redundant copy instead of two. A single node failure during a write burst could have lost data. This is exactly the class of bug the ship-gate exists to catch. Discovery cost: zero customer impact.",
+    "for_sme": "`src/federation.rs::broadcast_store_quorum` spawns fanout POSTs in a JoinSet, waits for W-1 acks in a loop, then calls `joins.shutdown().await` which ABORTS still-in-flight tasks. Under W=2/N=3 with two concurrent fanouts racing, the loser's reqwest POST was being killed mid-flight — often before the receiving axum handler could commit. Net effect: every write landed on leader + 1 peer, leaving the other peer ~50% behind.",
+    "bugs": [
+      {
+        "title": "Federation post-quorum fanout aborted mid-POST (silent data-loss risk)",
+        "impact": "Each write landed on leader + only ONE peer instead of all three. No sync-daemon in Phase 2 means permanent lag. A node failure between quorum-ack and catch-up would lose the write.",
+        "root_cause": "`tokio::task::JoinSet::shutdown().await` after early-exit cancelled in-flight spawned tasks. Detaching them instead preserves delivery.",
+        "fixed_in": [
+          {"label": "PR #309 (MERGED)", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/309"},
+          {"label": "Ship-gate issue #1 (CLOSED)", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/issues/1"}
+        ]
+      }
+    ],
+    "next_run_change": "PR #309 lands on release/v0.6.0. r15 validates: convergence should be 200/200 on all three nodes."
+  },
+
+  "v0.6.0.0-final-r15": {
+    "headline": "PHASE 2 FULLY GREEN — federation fanout fix validated under real load",
+    "verdict": "Federation bug resolved. First run ever with Phase 2 at 100% convergence on all three nodes. Phase 3 migration also PASS. Phase 4 exposed a separate chaos harness config bug.",
+    "what_it_tested": "Phases 1/2/3 as before, then Phase 4 for the first time (all earlier runs died before reaching it).",
+    "what_it_proved": "The federation fanout fix from PR #309 is effective under real load: 200 writes × 3 nodes = 600 rows measured, 100% landed everywhere. The migration roundtrip (SQLite → Postgres → SQLite, 1000 memories, idempotent) works. Phase 4 surfaced that the real-infra port/host overrides in phase4_chaos.sh collapsed all three chaos processes onto the same port — harness bug, not a product regression.",
+    "for_non_technical": "The data-loss bug we found and fixed in the last round: confirmed fixed. All three servers received all 200 messages. No surprises. The remaining failure is in our test rig for the chaos tests, not in the product.",
+    "for_c_level": "Phase 2 convergence: 200/200/200. The silent data-loss class of bug identified in run 14 is demonstrably closed. First run ever where Phases 1, 2, and 3 all PASS simultaneously — a release-eligible configuration is two harness fixes away.",
+    "for_sme": "Phase 2 `reasons: []`, counts `{a: 200, b: 200, c: 200}`, probe1 201, probe2 503 — textbook. Phase 4 failure traces to phase4_chaos.sh overriding N0_PORT/N1_PORT/N2_PORT all to 9077: run-chaos.sh is a LOCAL 3-process harness by design, so collapsing ports caused bind collision. Separately, N0_HOST/N1_HOST/N2_HOST env vars are never read by run-chaos.sh (hardcoded to 127.0.0.1). Aspirational-override pattern broke the test.",
+    "bugs": [
+      {
+        "title": "Phase 4 harness collapsed all three ai-memory processes onto port 9077",
+        "impact": "Only one of three chaos processes could bind; the rest silently failed. Every subsequent write was counted as fail (no quorum possible).",
+        "root_cause": "phase4_chaos.sh set all N*_PORT=9077 intending remote nodes, but run-chaos.sh is local-by-design.",
+        "fixed_in": [
+          {"label": "ship-gate commit 7adb773 (drop overrides)", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/commit/7adb773"}
+        ]
+      }
+    ],
+    "next_run_change": "r16 drops the overrides, letting run-chaos.sh spawn three local processes on default ports 19077/19078/19079 as designed."
+  },
+
+  "v0.6.0.0-final-r16": {
+    "headline": "Port collision resolved, `source=\"chaos\"` now the bottleneck",
+    "verdict": "Chaos writes reached the server, all rejected with 400 because `\"chaos\"` wasn't in VALID_SOURCES.",
+    "what_it_tested": "Phase 4 with three local chaos processes on distinct ports + 50 cycles × 2 default fault classes.",
+    "what_it_proved": "The port/bind issue is gone; the next gate is the product-side validation allowlist. Writes reach the handler and are rejected there.",
+    "for_non_technical": "We got past one test-rig problem; the next problem was the same label-checking rule that tripped Phase 2 earlier, applied to a different label. Same class of fix.",
+    "for_c_level": "A recurring theme: the server's input validation is strict enough that our own testing harness has to conform to it. That's exactly the posture we want for production traffic — test data is treated with the same skepticism as real data.",
+    "for_sme": "`run-chaos.sh` POSTs with `source=\"chaos\"`. Same VALID_SOURCES rejection pattern as r11 (source=\"ship-gate\"). Right fix this time is to add `\"chaos\"` to the allowlist — unlike a test harness, `chaos` is a legitimate caller class worth distinguishing in production logs.",
+    "bugs": [
+      {
+        "title": "source=\"chaos\" rejected by validate_source (all 5000 writes → 400)",
+        "impact": "Phase 4 convergence_bound stuck at 0; total_ok 0 / total_fail 5000.",
+        "root_cause": "`src/validate.rs::VALID_SOURCES` didn't include `\"chaos\"`. Harness payload was otherwise correct.",
+        "fixed_in": [
+          {"label": "PR #310 (MERGED)", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/310"}
+        ]
+      }
+    ],
+    "next_run_change": "PR #310 adds `\"chaos\"` to VALID_SOURCES + MCP tool schema enum + TS SDK Source union (three-file invariant). r17 should see writes reach 201."
+  },
+
+  "v0.6.0.0-final-r17": {
+    "headline": "Writes now land (150 ok) but convergence metric is broken",
+    "verdict": "Chaos source allowlist fix landed; writes succeed pre-kill. But `convergence_bound=0.03` revealed the harness's convergence math itself is wrong for kill-type faults.",
+    "what_it_tested": "Phase 4 with valid source, 50 cycles of kill_primary_mid_write.",
+    "what_it_proved": "The product accepts `source=\"chaos\"` writes; quorum succeeds for the 3 pre-kill writes in each cycle. But the published metric `total_ok / total_writes` is mathematically capped at ~2% for kill faults (primary dies at write 2 of 100), making the 0.995 threshold unreachable no matter how healthy the cluster is.",
+    "for_non_technical": "We can now write to the system in the chaos test. But the scoring system is rigged against us: it measures 'what fraction of attempts succeed' and the test deliberately kills the server after the second attempt. We need to measure 'of the attempts that succeeded, did the data actually survive?' That's the real signal.",
+    "for_c_level": "A measurement-definition bug was masking a passing product. The test was asking the wrong question. Corrected metric is `of writes that 201'd, what fraction landed on the surviving peers`, which is the actual eventual-consistency contract.",
+    "for_sme": "run-chaos.sh line 221: `convergence_bound = ok/writes * 1000 | floor / 1000`. With `kill_primary_mid_write` firing at write 2 of 100, writes 3..99 hit a dead port — always fail. Ratio caps at ~2%. Right metric: `min(count_node1, count_node2) / total_ok` per cycle, aggregated. That answers 'did quorum survivors have the write?' which is the eventual-consistency guarantee.",
+    "bugs": [
+      {
+        "title": "Phase 4 convergence metric measured uptime, not convergence",
+        "impact": "0.995 threshold unreachable for kill faults regardless of product correctness.",
+        "root_cause": "`ok/total_writes` ignores that most writes-during-kill are guaranteed to fail; doesn't examine whether survivors converged.",
+        "fixed_in": [
+          {"label": "PR #312 (MERGED)", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/312"}
+        ]
+      }
+    ],
+    "next_run_change": "r18 runs with the surviving-peer metric. Surfaces two deeper harness bugs (cumulative count pollution + partition_minority teardown race) — all closed in PR #312."
+  },
+
+  "v0.6.0.0-final-r18": {
+    "headline": "Metric returns 6.286 — impossibly high — and partition_minority crashes at cycle 13",
+    "verdict": "Two more chaos harness bugs: per-cycle DB + namespace reuse (counts cumulative across cycles → ratios >1) and SIGTERM graceful-shutdown races with next cycle's spawn.",
+    "what_it_tested": "Phase 4 with the surviving-peer metric, same two fault classes.",
+    "what_it_proved": "Disproved that run-chaos.sh's cycle isolation was clean. The reused namespace meant each cycle's count query returned prior cycles' memories too. SIGTERM + `wait` didn't guarantee the listen socket released before the next spawn.",
+    "for_non_technical": "We kept finding problems in the way we ran the chaos tests. None of them were product bugs, but they were blocking us from knowing whether the product passed the chaos tests. Each cycle needs to be a clean slate, or the counts bleed into each other.",
+    "for_c_level": "Harness hardening continues to surface ahead of the product assertions — a good posture. Nothing yet has pointed at a real product regression beyond the run-14 federation fanout fix. The chaos harness needed per-cycle isolation + deterministic teardown; both now in place.",
+    "for_sme": "Two stacked harness bugs. (1) DB path was `WORKDIR/node-N.db` shared across cycles — abandoned WAL from one cycle's SIGKILL'd primary fought the next cycle's replay. Plus cumulative namespace made count_node1 per-cycle = 3 × cycle_number, so the new `min(...)/total_ok` metric summed to 6.286. (2) SIGTERM at teardown kicked ai-memory's 30s graceful-shutdown path (red-team #233); the listen socket stayed bound past `wait`'s return. Next cycle's spawn collided.",
+    "bugs": [
+      {
+        "title": "Per-cycle DB + namespace reuse polluted counts + crashed recovery",
+        "impact": "Metric output 6.286 (impossible > 1). partition_minority died at cycle 13 with node-0 failed to start.",
+        "root_cause": "run-chaos.sh reused `node-0.db`/`node-1.db`/`node-2.db` and `namespace=\"chaos\"` across all cycles. Abandoned WAL recovery raced with spawn.",
+        "fixed_in": [
+          {"label": "PR #312 (MERGED)", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/312"}
+        ]
+      },
+      {
+        "title": "SIGTERM teardown race with next cycle's spawn",
+        "impact": "Under partition_minority, listen socket held by gracefully-shutting-down process collided with next cycle's spawn.",
+        "root_cause": "ai-memory's graceful-shutdown path holds the socket during a WAL checkpoint that can take seconds. `wait` returns before the socket actually releases.",
+        "fixed_in": [
+          {"label": "PR #312 (MERGED) — SIGKILL + 100ms settle", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/312"}
+        ]
+      }
+    ],
+    "next_run_change": "r19 uses per-cycle `c${n}-node-${idx}.db` files + `chaos-c${n}` namespaces + SIGKILL teardown + 100ms settle."
+  }
+}

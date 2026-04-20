@@ -4,55 +4,148 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Campaign v0.6.0.0-final-r15 — ai-memory ship-gate</title>
-  <meta name="description" content="Per-phase evidence for ai-memory-mcp ship-gate campaign v0.6.0.0-final-r15 (ref release/v0.6.0).">
+  <meta name="description" content="AI NHI analysis + per-phase evidence for ai-memory-mcp ship-gate campaign v0.6.0.0-final-r15 (ref release/v0.6.0).">
   <style>
     :root {
       --fg: #1a1a1a; --bg: #fff; --muted: #666;
       --pass: #1a8b3c; --fail: #b32222; --pass-bg: #e6f6ea; --fail-bg: #fceaea;
-      --border: #e0e0e0; --code-bg: #f7f7f9;
+      --border: #e0e0e0; --code-bg: #f7f7f9; --accent: #3952c8; --accent-bg: #eef1fd;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --fg: #eaeaea; --bg: #181818; --muted: #a0a0a0;
         --pass: #4adc76; --fail: #ff6a6a; --pass-bg: #153d23; --fail-bg: #401818;
-        --border: #2a2a2a; --code-bg: #202028;
+        --border: #2a2a2a; --code-bg: #202028; --accent: #8da3ff; --accent-bg: #1c2140;
       }
     }
     * { box-sizing: border-box; }
-    body { font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
-    main { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    body { font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
     header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
     header p.crumb { color: var(--muted); font-size: 13px; margin: 0 0 .25rem; }
-    h1 { margin: .25rem 0 .75rem; font-size: 1.75rem; }
-    h2 { margin: 1.5rem 0 .5rem; font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h1 { margin: .25rem 0 .75rem; font-size: 1.85rem; }
+    h2 { margin: 1.75rem 0 .5rem; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h3 { margin: 1.25rem 0 .4rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+    h4 { margin: .5rem 0 .25rem; font-size: 1rem; }
     dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
     dl.meta dt { color: var(--muted); }
     dl.meta dd { margin: 0; }
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
+    .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
+    .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight p.verdict { font-size: 1.05rem; margin: .5rem 0 1rem; }
+    .audiences { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-top: .5rem; }
+    @media (min-width: 720px) { .audiences { grid-template-columns: repeat(3, 1fr); } }
+    .audiences article { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .85rem 1rem; }
+    .audiences article h4 { margin-top: 0; color: var(--accent); font-size: 14px; letter-spacing: .02em; }
+    .audiences article p { margin: .25rem 0 0; font-size: 14px; }
+    ol.bugs { margin: .5rem 0; padding-left: 1.25rem; }
+    ol.bugs > li { margin-bottom: .75rem; }
+    ol.bugs p.bug-title { font-weight: 600; margin: .25rem 0; }
+    ol.bugs p.bug-field { margin: .25rem 0; font-size: 14px; }
+    ol.bugs ul.bug-fixes { margin: .25rem 0 .5rem 1rem; padding: 0; list-style: disc; font-size: 14px; }
+    ul.checklist { list-style: none; padding: 0; margin: .25rem 0 .75rem; }
+    ul.checklist li { padding: .2rem 0 .2rem 0; font-size: 14px; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+    ul.checklist li .check { display: inline-block; width: 1.25rem; text-align: center; font-weight: 700; font-size: 15px; }
+    ul.checklist li.pass .check { color: var(--pass); }
+    ul.checklist li.fail .check { color: var(--fail); }
+    ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
     details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
     details[open] { padding-bottom: .5rem; }
     summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
     pre { background: var(--code-bg); padding: .75rem; border-radius: 6px; overflow-x: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
-    a { color: inherit; }
-    a:hover { color: var(--pass); }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--muted); font-size: 14px; }
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 3rem; }
   </style>
 </head>
 <body>
   <main>
     <header>
-      <p class="crumb"><a href="../">../ runs index</a> · <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/v0.6.0.0-final-r15.html">rendered on Pages</a></p>
-      <h1>Campaign v0.6.0.0-final-r15 <span class="badge pass">PASS</span></h1>
+      <p class="crumb"><a href="../">../ runs index</a> &middot; <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/v0.6.0.0-final-r15/">rendered on Pages</a></p>
+      <h1>Campaign v0.6.0.0-final-r15 <span class="badge fail">FAIL</span></h1>
       <dl class="meta">
         <dt>ai-memory ref</dt><dd><code>release/v0.6.0</code></dd>
         <dt>Completed at</dt><dd>2026-04-20T11:59:50Z</dd>
-        <dt>Overall pass</dt><dd>true</dd>
+        <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="ai-insight">
+        <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
+        <h2>PHASE 2 FULLY GREEN — federation fanout fix validated under real load</h2>
+        <p class="verdict">Federation bug resolved. First run ever with Phase 2 at 100% convergence on all three nodes. Phase 3 migration also PASS. Phase 4 exposed a separate chaos harness config bug.</p>
+        <h3>What this campaign tested</h3>
+        <p>Phases 1/2/3 as before, then Phase 4 for the first time (all earlier runs died before reaching it).</p>
+        <h3>What it proved (or disproved)</h3>
+        <p>The federation fanout fix from PR #309 is effective under real load: 200 writes × 3 nodes = 600 rows measured, 100% landed everywhere. The migration roundtrip (SQLite → Postgres → SQLite, 1000 memories, idempotent) works. Phase 4 surfaced that the real-infra port/host overrides in phase4_chaos.sh collapsed all three chaos processes onto the same port — harness bug, not a product regression.</p>
+        <h3>For three audiences</h3>
+        <div class="audiences">
+          <article>
+            <h4>Non-technical end users</h4>
+            <p>The data-loss bug we found and fixed in the last round: confirmed fixed. All three servers received all 200 messages. No surprises. The remaining failure is in our test rig for the chaos tests, not in the product.</p>
+          </article>
+          <article>
+            <h4>C-level decision makers</h4>
+            <p>Phase 2 convergence: 200/200/200. The silent data-loss class of bug identified in run 14 is demonstrably closed. First run ever where Phases 1, 2, and 3 all PASS simultaneously — a release-eligible configuration is two harness fixes away.</p>
+          </article>
+          <article>
+            <h4>Engineers &amp; architects</h4>
+            <p>Phase 2 `reasons: []`, counts `{a: 200, b: 200, c: 200}`, probe1 201, probe2 503 — textbook. Phase 4 failure traces to phase4_chaos.sh overriding N0_PORT/N1_PORT/N2_PORT all to 9077: run-chaos.sh is a LOCAL 3-process harness by design, so collapsing ports caused bind collision. Separately, N0_HOST/N1_HOST/N2_HOST env vars are never read by run-chaos.sh (hardcoded to 127.0.0.1). Aspirational-override pattern broke the test.</p>
+          </article>
+        </div>
+        <h3>Bugs surfaced and where they were fixed</h3>
+        <ol class="bugs">
+          <li>
+            <p class="bug-title">Phase 4 harness collapsed all three ai-memory processes onto port 9077</p>
+            <p class="bug-field"><strong>Impact:</strong> Only one of three chaos processes could bind; the rest silently failed. Every subsequent write was counted as fail (no quorum possible).</p>
+            <p class="bug-field"><strong>Root cause:</strong> phase4_chaos.sh set all N*_PORT=9077 intending remote nodes, but run-chaos.sh is local-by-design.</p>
+            <p class="bug-field"><strong>Fixed in:</strong></p>
+            <ul class="bug-fixes">
+              <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/7adb773" rel="noopener">ship-gate commit 7adb773 (drop overrides)</a></li>
+            </ul>
+          </li>
+        </ol>
+        <h3>What changed going into the next campaign</h3>
+        <p>r16 drops the overrides, letting run-chaos.sh spawn three local processes on default ports 19077/19078/19079 as designed.</p>
+      </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <h3>Test results</h3>
+        <h4>node-a</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-b</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-c</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase1-node-a</summary>
           <pre>{
@@ -233,6 +326,17 @@
       </section>
       <section class="phase">
         <h2>Phase 2 <span class="badge pass">PASS</span></h2>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Burst writes returned 201 <span class="muted">— ok=200/200 (qnm=0, fail=0)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-A convergence ≥ 95% of ok <span class="muted">— a=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-B convergence ≥ 95% of ok <span class="muted">— b=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-C convergence ≥ 95% of ok <span class="muted">— c=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Probe 1: one peer down → 201 (quorum met via remaining peer) <span class="muted">— got 201</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Probe 2: both peers down → 503 (quorum_not_met) <span class="muted">— got 503</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-2 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase2</summary>
           <pre>{
@@ -259,6 +363,16 @@
       </section>
       <section class="phase">
         <h2>Phase 3 <span class="badge pass">PASS</span></h2>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Source SQLite has 1000 seed memories <span class="muted">— src_count=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Destination after reverse roundtrip has 1000 memories <span class="muted">— dst_count=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Forward migration SQLite → Postgres: errors=0 <span class="muted">— errors=0</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Idempotent re-run is a no-op <span class="muted">— writes=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Reverse migration Postgres → SQLite: errors=0 <span class="muted">— errors=0</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-3 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase3</summary>
           <pre>{
@@ -302,7 +416,107 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 4 </h2>
+        <h2>Phase 4 <span class="badge fail">FAIL</span></h2>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="fail"><span class="check">&#x2717;</span> phase4.json did not parse as JSON — the chaos-harness summary never wrote cleanly <span class="muted">— see raw JSON below</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Per-fault convergence_bound ≥ 0.995 <span class="muted">— metric unavailable</span></li>
+        </ul>
+        <h3>Raw evidence</h3>
         <details>
           <summary>phase4</summary>
-          <pre>
+          <pre>[chaos] chaos campaign: fault=kill_primary_mid_write cycles=50 writes/cycle=100
+[chaos] workdir: /tmp/phase4-kill_primary_mid_write
+[chaos] binary: /usr/local/bin/ai-memory
+[chaos] cycle 1: nodes ready (pids 4476 4478 4480)
+[chaos] cycle 2: nodes ready (pids 4833 4835 4837)
+[chaos] cycle 3: nodes ready (pids 5172 5174 5176)
+[chaos] cycle 4: nodes ready (pids 5511 5513 5515)
+[chaos] cycle 5: nodes ready (pids 5852 5854 5856)
+[chaos] cycle 6: nodes ready (pids 6191 6193 6195)
+[chaos] cycle 7: nodes ready (pids 6530 6532 6534)
+[chaos] cycle 8: nodes ready (pids 6869 6871 6873)
+[chaos] cycle 9: nodes ready (pids 7208 7210 7212)
+[chaos] cycle 10: nodes ready (pids 7547 7549 7551)
+[chaos] cycle 11: nodes ready (pids 7886 7888 7890)
+[chaos] cycle 12: nodes ready (pids 8227 8229 8231)
+[chaos] cycle 13: nodes ready (pids 8566 8568 8570)
+[chaos] cycle 14: nodes ready (pids 8907 8909 8911)
+[chaos] cycle 15: nodes ready (pids 9246 9248 9250)
+[chaos] cycle 16: nodes ready (pids 9587 9589 9591)
+[chaos] cycle 17: nodes ready (pids 9928 9930 9932)
+[chaos] cycle 18: nodes ready (pids 10269 10271 10273)
+[chaos] cycle 19: nodes ready (pids 10610 10612 10614)
+[chaos] cycle 20: nodes ready (pids 10951 10953 10955)
+[chaos] cycle 21: nodes ready (pids 11292 11294 11296)
+[chaos] cycle 22: nodes ready (pids 11631 11633 11635)
+[chaos] cycle 23: nodes ready (pids 11970 11972 11974)
+[chaos] cycle 24: nodes ready (pids 12311 12313 12315)
+[chaos] cycle 25: nodes ready (pids 12652 12654 12656)
+[chaos] cycle 26: nodes ready (pids 12994 12996 12998)
+[chaos] cycle 27: nodes ready (pids 13335 13337 13339)
+[chaos] cycle 28: nodes ready (pids 13674 13676 13678)
+[chaos] cycle 29: nodes ready (pids 14015 14017 14019)
+[chaos] cycle 30: nodes ready (pids 14356 14358 14360)
+[chaos] cycle 31: nodes ready (pids 14697 14699 14701)
+[chaos] cycle 32: nodes ready (pids 15036 15038 15040)
+[chaos] cycle 33: nodes ready (pids 15375 15377 15379)
+[chaos] cycle 34: nodes ready (pids 15717 15719 15721)
+[chaos] cycle 35: nodes ready (pids 16056 16058 16060)
+[chaos] cycle 36: nodes ready (pids 16397 16399 16401)
+[chaos] cycle 37: nodes ready (pids 16736 16738 16740)
+[chaos] cycle 38: nodes ready (pids 17075 17077 17079)
+[chaos] cycle 39: nodes ready (pids 17414 17416 17418)
+[chaos] cycle 40: nodes ready (pids 17753 17755 17757)
+[chaos] cycle 41: nodes ready (pids 18094 18096 18098)
+[chaos] cycle 42: nodes ready (pids 18435 18437 18439)
+[chaos] cycle 43: nodes ready (pids 18774 18776 18778)
+[chaos] cycle 44: nodes ready (pids 19113 19115 19117)
+[chaos] cycle 45: nodes ready (pids 19452 19454 19456)
+[chaos] cycle 46: nodes ready (pids 19791 19793 19795)
+[chaos] cycle 47: nodes ready (pids 20132 20134 20136)
+[chaos] cycle 48: nodes ready (pids 20471 20473 20475)
+[chaos] cycle 49: nodes ready (pids 20812 20814 20816)
+[chaos] cycle 50: nodes ready (pids 21151 21153 21155)
+[chaos] ---- summary ----
+{
+  "total_cycles": 50,
+  "total_writes": 5000,
+  "total_ok": 0,
+  "total_quorum_not_met": 0,
+  "total_fail": 5000,
+  "convergence_bound": 0
+}
+[chaos] per-cycle JSONL: /tmp/phase4-kill_primary_mid_write/chaos-report.jsonl
+</pre>
+          <p><a href="./phase4.json">raw JSON</a></p>
+        </details>
+      </section>
+    <section>
+      <h2>All artefacts</h2>
+      <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
+      <ul>
+        <li><a href="./campaign-summary.json">campaign-summary.json</a></li>
+        <li><a href="./phase1-node-a.json">phase1-node-a.json</a></li>
+        <li><a href="./phase1-node-b.json">phase1-node-b.json</a></li>
+        <li><a href="./phase1-node-c.json">phase1-node-c.json</a></li>
+        <li><a href="./phase2.json">phase2.json</a></li>
+        <li><a href="./phase3.json">phase3.json</a></li>
+        <li><a href="./phase4.json">phase4.json</a></li>
+      </ul>
+    </section>
+    <footer>
+      Generated by <code>scripts/generate_run_html.sh</code>.
+      Campaign directory:
+      <a href="https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/v0.6.0.0-final-r15">
+        alphaonedev/ai-memory-ship-gate/runs/v0.6.0.0-final-r15
+      </a>.
+      Methodology:
+      <a href="https://alphaonedev.github.io/ai-memory-ship-gate/methodology/">
+        alphaonedev.github.io/ai-memory-ship-gate/methodology
+      </a>.
+      Analysis data source: <code>analysis/run-insights.json</code>.
+    </footer>
+  </main>
+</body>
+</html>
