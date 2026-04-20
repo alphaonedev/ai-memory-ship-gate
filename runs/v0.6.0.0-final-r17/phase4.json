@@ -1,0 +1,63 @@
+[chaos] chaos campaign: fault=kill_primary_mid_write cycles=50 writes/cycle=100
+[chaos] workdir: /tmp/phase4-kill_primary_mid_write
+[chaos] binary: /usr/local/bin/ai-memory
+[chaos] cycle 1: nodes ready (pids 4436 4438 4440)
+[chaos] cycle 2: nodes ready (pids 4804 4806 4808)
+[chaos] cycle 3: nodes ready (pids 5146 5148 5150)
+[chaos] cycle 4: nodes ready (pids 5488 5490 5492)
+[chaos] cycle 5: nodes ready (pids 5830 5832 5834)
+[chaos] cycle 6: nodes ready (pids 6172 6174 6176)
+[chaos] cycle 7: nodes ready (pids 6514 6516 6518)
+[chaos] cycle 8: nodes ready (pids 6856 6858 6860)
+[chaos] cycle 9: nodes ready (pids 7198 7200 7202)
+[chaos] cycle 10: nodes ready (pids 7540 7542 7544)
+[chaos] cycle 11: nodes ready (pids 7882 7884 7886)
+[chaos] cycle 12: nodes ready (pids 8224 8226 8228)
+[chaos] cycle 13: nodes ready (pids 8566 8568 8570)
+[chaos] cycle 14: nodes ready (pids 8908 8910 8912)
+[chaos] cycle 15: nodes ready (pids 9250 9252 9254)
+[chaos] cycle 16: nodes ready (pids 9593 9595 9597)
+[chaos] cycle 17: nodes ready (pids 9935 9937 9939)
+[chaos] cycle 18: nodes ready (pids 10277 10279 10281)
+[chaos] cycle 19: nodes ready (pids 10621 10623 10625)
+[chaos] cycle 20: nodes ready (pids 10963 10965 10967)
+[chaos] cycle 21: nodes ready (pids 11306 11308 11310)
+[chaos] cycle 22: nodes ready (pids 11648 11650 11652)
+[chaos] cycle 23: nodes ready (pids 11990 11992 11994)
+[chaos] cycle 24: nodes ready (pids 12332 12334 12336)
+[chaos] cycle 25: nodes ready (pids 12676 12678 12680)
+[chaos] cycle 26: nodes ready (pids 13020 13022 13024)
+[chaos] cycle 27: nodes ready (pids 13365 13367 13369)
+[chaos] cycle 28: nodes ready (pids 13709 13711 13713)
+[chaos] cycle 29: nodes ready (pids 14053 14055 14057)
+[chaos] cycle 30: nodes ready (pids 14397 14399 14401)
+[chaos] cycle 31: nodes ready (pids 14741 14743 14745)
+[chaos] cycle 32: nodes ready (pids 15085 15087 15089)
+[chaos] cycle 33: nodes ready (pids 15429 15431 15433)
+[chaos] cycle 34: nodes ready (pids 15777 15779 15781)
+[chaos] cycle 35: nodes ready (pids 16121 16123 16125)
+[chaos] cycle 36: nodes ready (pids 16467 16469 16471)
+[chaos] cycle 37: nodes ready (pids 16813 16815 16817)
+[chaos] cycle 38: nodes ready (pids 17159 17161 17163)
+[chaos] cycle 39: nodes ready (pids 17505 17507 17509)
+[chaos] cycle 40: nodes ready (pids 17851 17853 17855)
+[chaos] cycle 41: nodes ready (pids 18197 18199 18201)
+[chaos] cycle 42: nodes ready (pids 18545 18547 18549)
+[chaos] cycle 43: nodes ready (pids 18891 18893 18895)
+[chaos] cycle 44: nodes ready (pids 19237 19239 19241)
+[chaos] cycle 45: nodes ready (pids 19583 19585 19587)
+[chaos] cycle 46: nodes ready (pids 19929 19931 19933)
+[chaos] cycle 47: nodes ready (pids 20275 20277 20279)
+[chaos] cycle 48: nodes ready (pids 20621 20623 20625)
+[chaos] cycle 49: nodes ready (pids 20969 20971 20973)
+[chaos] cycle 50: nodes ready (pids 21317 21319 21321)
+[chaos] ---- summary ----
+{
+  "total_cycles": 50,
+  "total_writes": 5000,
+  "total_ok": 150,
+  "total_quorum_not_met": 0,
+  "total_fail": 4850,
+  "convergence_bound": 0.03
+}
+[chaos] per-cycle JSONL: /tmp/phase4-kill_primary_mid_write/chaos-report.jsonl
