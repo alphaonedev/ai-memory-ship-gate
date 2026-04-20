@@ -86,7 +86,7 @@ for AGENT in "${AGENTS[@]}"; do
       -H "X-Agent-Id: $AGENT" \
       -H "Content-Type: application/json" \
       -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
-      -d "{\"tier\":\"mid\",\"namespace\":\"$NS\",\"title\":\"$AGENT-w$i\",\"content\":\"multi-agent write $AGENT seq $i\",\"priority\":5,\"confidence\":1.0,\"source\":\"ship-gate\",\"metadata\":{}}" \
+      -d "{\"tier\":\"mid\",\"namespace\":\"$NS\",\"title\":\"$AGENT-w$i\",\"content\":\"multi-agent write $AGENT seq $i\",\"priority\":5,\"confidence\":1.0,\"source\":\"api\",\"metadata\":{}}" \
       2>/dev/null || echo 000)
     echo "$CODE" >> "$CODES_FILE"
     # Capture first write's response body for diagnosis.
@@ -147,7 +147,7 @@ sleep 2
 PROBE1=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
   -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
-  -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe1\",\"title\":\"probe1-$(date +%s)\",\"content\":\"single-peer-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"probe\",\"metadata\":{}}" \
+  -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe1\",\"title\":\"probe1-$(date +%s)\",\"content\":\"single-peer-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"api\",\"metadata\":{}}" \
   2>/dev/null || echo 000)
 
 log "probe: kill node-c too, confirm node-a fails with 503 quorum_not_met"
@@ -156,7 +156,7 @@ sleep 2
 PROBE2=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
   -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
-  -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe2\",\"title\":\"probe2-$(date +%s)\",\"content\":\"both-peers-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"probe\",\"metadata\":{}}" \
+  -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe2\",\"title\":\"probe2-$(date +%s)\",\"content\":\"both-peers-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"api\",\"metadata\":{}}" \
   2>/dev/null || echo 000)
 
 # ---- Pass/fail --------------------------------------------------
