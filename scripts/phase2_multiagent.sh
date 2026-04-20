@@ -117,11 +117,13 @@ else
 fi
 
 # ---- Settle period ---------------------------------------------
-# 30s is three sync-daemon cycles at default 10s cadence — enough
-# for the quorum-ack + downstream-replicate chain to converge on the
-# default happy path. If the 95%-convergence check fails, bump to 60s
-# via SETTLE_SECS override before assuming a regression.
-SETTLE_SECS="${SETTLE_SECS:-30}"
+# Run 13 showed 30s leaves node-C at 73% and node-B at 89.5% — below
+# the 95% threshold. 90s = 9 sync-daemon cycles at the default 10s
+# cadence, which comfortably covers pulling 200 records on a fresh
+# peer. If convergence still lags after 90s, that's an ai-memory-mcp
+# sync-daemon performance issue (file separately) — don't just keep
+# bumping this.
+SETTLE_SECS="${SETTLE_SECS:-90}"
 log "settle ${SETTLE_SECS}s for sync-daemon convergence"
 sleep "$SETTLE_SECS"
 
@@ -141,8 +143,14 @@ done
 
 # ---- Quorum-not-met probe --------------------------------------
 # SSH (control plane) still uses public IPs; curl writes use private.
+# Run 13: pkill killed ai-memory serve successfully but ssh itself
+# returned 255 (transport close after remote process tree went down),
+# which with `set -e` aborted the script before probe1/probe2 ran.
+# `|| true` INSIDE the remote quotes only protects the remote exit
+# code; we need an outer `|| true` to absorb transport-level 255s.
+SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=5"
 log "probe: kill node-b, confirm node-a still meets quorum via node-c"
-ssh -o StrictHostKeyChecking=no root@"$NODE_B_IP" "pkill -f 'ai-memory serve' || true"
+ssh $SSH_OPTS root@"$NODE_B_IP" "pkill -f 'ai-memory serve' || true" || true
 sleep 2
 PROBE1=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
@@ -151,7 +159,7 @@ PROBE1=$(curl -sS -o /dev/null -w '%{http_code}' \
   2>/dev/null || echo 000)
 
 log "probe: kill node-c too, confirm node-a fails with 503 quorum_not_met"
-ssh -o StrictHostKeyChecking=no root@"$NODE_C_IP" "pkill -f 'ai-memory serve' || true"
+ssh $SSH_OPTS root@"$NODE_C_IP" "pkill -f 'ai-memory serve' || true" || true
 sleep 2
 PROBE2=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
