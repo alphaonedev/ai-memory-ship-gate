@@ -53,6 +53,10 @@
     ul.checklist li.pass .check { color: var(--pass); }
     ul.checklist li.fail .check { color: var(--fail); }
     ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
+    table.cycle-table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    table.cycle-table th, table.cycle-table td { padding: .2rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
+    table.cycle-table th:first-child, table.cycle-table td:first-child { text-align: left; }
+    table.cycle-table th { background: var(--code-bg); font-weight: 600; }
     details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
     details[open] { padding-bottom: .5rem; }
     summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }

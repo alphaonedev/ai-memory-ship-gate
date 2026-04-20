@@ -38,11 +38,16 @@ FAULTS="${FAULTS:-kill_primary_mid_write partition_minority}"
 # campaign shape is satisfied by the local harness.
 
 declare -A RESULTS
+declare -A CYCLE_DATA
 for FAULT in $FAULTS; do
   log "campaign: $FAULT"
   REPORT_DIR="/tmp/phase4-$FAULT"
   rm -rf "$REPORT_DIR"; mkdir -p "$REPORT_DIR"
 
+  # Route verbose chaos output to a log file only (not stdout) — the
+  # tee'd stdout used to pollute phase4.json with 100s of "[chaos]
+  # cycle N: nodes ready" lines. Reviewers read the per-cycle JSONL
+  # from the structured summary instead.
   WORKDIR="$REPORT_DIR" \
   AI_MEMORY_BIN="/usr/local/bin/ai-memory" \
     bash packaging/chaos/run-chaos.sh \
@@ -50,7 +55,7 @@ for FAULT in $FAULTS; do
       --writes "$WRITES" \
       --fault "$FAULT" \
       --verbose \
-      2>&1 | tee "$REPORT_DIR/campaign.log"
+      > "$REPORT_DIR/campaign.log" 2>&1
 
   # Extract convergence bound from the per-cycle JSONL.
   #
@@ -84,6 +89,14 @@ for FAULT in $FAULTS; do
   fi
   RESULTS[$FAULT]=$BOUND
   log "$FAULT convergence_bound=$BOUND"
+  # Capture the per-cycle JSONL so downstream dashboards can render
+  # counts per cycle, which is the data needed to distinguish
+  # harness-timing from product-lag when a fault misses its bound.
+  if [[ -s "$JSONL" ]]; then
+    CYCLE_DATA[$FAULT]=$(jq -s '.' "$JSONL")
+  else
+    CYCLE_DATA[$FAULT]='[]'
+  fi
 done
 
 # ---- Pass/fail --------------------------------------------------
@@ -95,13 +108,20 @@ for FAULT in "${!RESULTS[@]}"; do
   (( ok == 1 )) || { PASS=false; REASONS+=("$FAULT: $bound < 0.995"); }
 done
 
+CYCLES_BY_FAULT=$(
+  for f in "${!CYCLE_DATA[@]}"; do
+    printf '{"%s":%s}\n' "$f" "${CYCLE_DATA[$f]}"
+  done | jq -s 'add // {}'
+)
 jq -n \
   --arg pass "$PASS" \
   --argjson cycles "$CYCLES" \
   --argjson writes "$WRITES" \
   --argjson results "$(for f in "${!RESULTS[@]}"; do printf '{"%s":%s}\n' "$f" "${RESULTS[$f]}"; done | jq -s 'add')" \
   --argjson reasons "$(printf '%s\n' "${REASONS[@]}" | jq -R . | jq -s .)" \
+  --argjson cycles_by_fault "$CYCLES_BY_FAULT" \
   '{phase:4, pass:($pass=="true"), cycles_per_fault:$cycles, writes_per_cycle:$writes,
-    convergence_by_fault:$results, reasons:$reasons}' | tee /tmp/phase4.json
+    convergence_by_fault:$results, reasons:$reasons,
+    cycles_by_fault:$cycles_by_fault}' | tee /tmp/phase4.json
 
 $PASS || exit 1

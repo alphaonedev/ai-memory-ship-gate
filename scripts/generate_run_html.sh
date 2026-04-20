@@ -317,7 +317,6 @@ checklist_phase4() {
     printf '        </ul>\n'
     return 0
   fi
-  # Per-fault convergence_bound entries.
   local faults
   faults=$(jq -r '(.convergence_by_fault // {}) | keys[]?' "$f" 2>/dev/null)
   if [ -n "$faults" ]; then
@@ -337,6 +336,32 @@ checklist_phase4() {
   check_item "$(jq_bool "$f" '.pass == true')" \
     "Overall phase-4 pass flag" ""
   printf '        </ul>\n'
+
+  # Per-cycle drill-down table — only present when phase4_chaos.sh
+  # captured the per-cycle JSONL into cycles_by_fault (new in r21).
+  # For each fault class, render a collapsible table showing cycle-#,
+  # ok/qnm/fail, and the per-peer count. That's the data needed to
+  # distinguish harness-timing from product-lag when a bound misses.
+  local fault_list
+  fault_list=$(jq -r '(.cycles_by_fault // {}) | keys[]?' "$f" 2>/dev/null)
+  [ -z "$fault_list" ] && return 0
+  printf '        <h4>Per-cycle convergence detail</h4>\n'
+  while IFS= read -r fault; do
+    local cycle_count
+    cycle_count=$(jq --arg k "$fault" '.cycles_by_fault[$k] | length' "$f" 2>/dev/null)
+    [ "${cycle_count:-0}" -gt 0 ] || continue
+    printf '        <details>\n'
+    printf '          <summary>%s — %s cycles</summary>\n' "$(echo "$fault" | html_escape)" "$cycle_count"
+    printf '          <table class="cycle-table">\n'
+    printf '            <thead><tr><th>cycle</th><th>ok</th><th>qnm</th><th>fail</th><th>node-0</th><th>node-1</th><th>node-2</th></tr></thead>\n'
+    printf '            <tbody>\n'
+    jq -r --arg k "$fault" '
+      .cycles_by_fault[$k][] |
+      "<tr><td>\(.cycle)</td><td>\(.ok)</td><td>\(.quorum_not_met)</td><td>\(.fail)</td><td>\(.count_node0)</td><td>\(.count_node1)</td><td>\(.count_node2)</td></tr>"' "$f" 2>/dev/null
+    printf '            </tbody>\n'
+    printf '          </table>\n'
+    printf '        </details>\n'
+  done <<< "$fault_list"
 }
 
 # --- phase dossier ---------------------------------------------------
@@ -445,6 +470,10 @@ cat <<EOF
     ul.checklist li.pass .check { color: var(--pass); }
     ul.checklist li.fail .check { color: var(--fail); }
     ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
+    table.cycle-table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    table.cycle-table th, table.cycle-table td { padding: .2rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
+    table.cycle-table th:first-child, table.cycle-table td:first-child { text-align: left; }
+    table.cycle-table th { background: var(--code-bg); font-weight: 600; }
     details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
     details[open] { padding-bottom: .5rem; }
     summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
