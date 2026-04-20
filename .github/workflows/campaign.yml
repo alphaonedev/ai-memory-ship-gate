@@ -20,9 +20,9 @@ on:
         required: false
         default: "50"
       chaos_faults:
-        description: "Space-separated chaos faults (default: 2 real; add drop_random_acks / clock_skew_peer for simulated)"
+        description: "Space-separated chaos faults. Default: kill_primary_mid_write (the critical disaster scenario). Opt-in extras: partition_minority, drop_random_acks, clock_skew_peer."
         required: false
-        default: "kill_primary_mid_write partition_minority"
+        default: "kill_primary_mid_write"
 
 permissions:
   contents: write
