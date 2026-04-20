@@ -269,12 +269,18 @@ jobs:
       - name: Commit campaign artefacts
         if: always()
         run: |
-          mkdir -p "runs/${{ github.event.inputs.campaign_id }}"
-          cp phase-reports/*.json "runs/${{ github.event.inputs.campaign_id }}/" 2>/dev/null || true
-          cp campaign-summary.json "runs/${{ github.event.inputs.campaign_id }}/" 2>/dev/null || true
+          CAMPAIGN_DIR="runs/${{ github.event.inputs.campaign_id }}"
+          mkdir -p "$CAMPAIGN_DIR"
+          cp phase-reports/*.json "$CAMPAIGN_DIR/" 2>/dev/null || true
+          cp campaign-summary.json "$CAMPAIGN_DIR/" 2>/dev/null || true
+          # Emit the self-contained offline-evidence HTML next to the
+          # JSONs so clones of the repo are browsable without a pages
+          # build. `|| true` so the artefact commit still lands even
+          # if the generator chokes on a malformed JSON.
+          bash scripts/generate_run_html.sh "$CAMPAIGN_DIR" || true
           git config user.name "ship-gate-bot"
           git config user.email "ship-gate-bot@users.noreply.github.com"
-          git add "runs/${{ github.event.inputs.campaign_id }}" 2>/dev/null || true
+          git add "$CAMPAIGN_DIR" 2>/dev/null || true
           git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artefacts" 2>/dev/null || true
           git push 2>/dev/null || true
 

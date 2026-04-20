@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campaign v0.6.0.0-final — ai-memory ship-gate</title>
+  <meta name="description" content="Per-phase evidence for ai-memory-mcp ship-gate campaign v0.6.0.0-final (ref release/v0.6.0).">
+  <style>
+    :root {
+      --fg: #1a1a1a; --bg: #fff; --muted: #666;
+      --pass: #1a8b3c; --fail: #b32222; --pass-bg: #e6f6ea; --fail-bg: #fceaea;
+      --border: #e0e0e0; --code-bg: #f7f7f9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #eaeaea; --bg: #181818; --muted: #a0a0a0;
+        --pass: #4adc76; --fail: #ff6a6a; --pass-bg: #153d23; --fail-bg: #401818;
+        --border: #2a2a2a; --code-bg: #202028;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
+    main { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    header p.crumb { color: var(--muted); font-size: 13px; margin: 0 0 .25rem; }
+    h1 { margin: .25rem 0 .75rem; font-size: 1.75rem; }
+    h2 { margin: 1.5rem 0 .5rem; font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+    dl.meta dt { color: var(--muted); }
+    dl.meta dd { margin: 0; }
+    .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
+    .badge.pass { color: var(--pass); background: var(--pass-bg); }
+    .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
+    details[open] { padding-bottom: .5rem; }
+    summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
+    pre { background: var(--code-bg); padding: .75rem; border-radius: 6px; overflow-x: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
+    a { color: inherit; }
+    a:hover { color: var(--pass); }
+    footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="crumb"><a href="../">../ runs index</a> · <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/v0.6.0.0-final.html">rendered on Pages</a></p>
+      <h1>Campaign v0.6.0.0-final <span class="badge pass">PASS</span></h1>
+      <dl class="meta">
+        <dt>ai-memory ref</dt><dd><code>release/v0.6.0</code></dd>
+        <dt>Completed at</dt><dd>2026-04-20T03:43:41Z</dd>
+        <dt>Overall pass</dt><dd>true</dd>
+      </dl>
+    </header>
+      <section class="phase">
+        <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <details>
+          <summary>phase1-node-a</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-v0-6-0-0-final-node-a",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-20T03:42:55.018060612+00:00",
+		"completed_at": "2026-04-20T03:42:55.018538372+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-a.json">raw JSON</a></p>
+        </details>
+        <details>
+          <summary>phase1-node-b</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-v0-6-0-0-final-node-b",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-20T03:42:54.917510191+00:00",
+		"completed_at": "2026-04-20T03:42:54.917957231+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-b.json">raw JSON</a></p>
+        </details>
+        <details>
+          <summary>phase1-node-c</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-v0-6-0-0-final-node-c",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-20T03:42:55.340141172+00:00",
+		"completed_at": "2026-04-20T03:42:55.340648710+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-c.json">raw JSON</a></p>
+        </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 2 </h2>
+        <details>
+          <summary>phase2</summary>
+          <pre></pre>
+          <p><a href="./phase2.json">raw JSON</a></p>
+        </details>
+      </section>
+    <section>
+      <h2>All artefacts</h2>
+      <ul>
+        <li><a href="./campaign-summary.json">campaign-summary.json</a></li>
+        <li><a href="./phase1-node-a.json">phase1-node-a.json</a></li>
+        <li><a href="./phase1-node-b.json">phase1-node-b.json</a></li>
+        <li><a href="./phase1-node-c.json">phase1-node-c.json</a></li>
+        <li><a href="./phase2.json">phase2.json</a></li>
+      </ul>
+    </section>
+    <footer>
+      Generated by <code>scripts/generate_run_html.sh</code>.
+      Repository:
+      <a href="https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/v0.6.0.0-final">
+        alphaonedev/ai-memory-ship-gate/runs/v0.6.0.0-final
+      </a>.
+      Methodology:
+      <a href="https://alphaonedev.github.io/ai-memory-ship-gate/methodology/">
+        alphaonedev.github.io/ai-memory-ship-gate/methodology
+      </a>.
+    </footer>
+  </main>
+</body>
+</html>

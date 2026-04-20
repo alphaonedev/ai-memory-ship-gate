@@ -34,20 +34,37 @@ jobs:
       - name: Install mkdocs-material
         run: pip install mkdocs-material mkdocs-macros-plugin
 
+      # Make sure every run directory has a self-contained index.html
+      # (the generator is idempotent — re-running it re-emits the same
+      # bytes). The same HTML is committed to the repo by the campaign
+      # workflow's artefact commit step, but regenerating here keeps
+      # older runs that predate that automation up-to-date.
+      - name: Backfill per-run index.html
+        run: |
+          set -euo pipefail
+          for dir in runs/*/; do
+            ./scripts/generate_run_html.sh "$dir" || true
+          done
+
       # Each campaign directory under runs/ gets a Markdown page. We
       # render the campaign-summary.json header and then per-phase
       # dossiers pulled directly from phase{1,2,3,4}.json — phase 2
       # carries federation convergence counts, phase 4 carries the
       # chaos convergence bound. Failed campaigns still get a page so
       # the regression history is visible.
-      - name: Generate per-campaign pages from runs/
+      - name: Generate per-campaign Markdown pages from runs/
         run: |
           set -euo pipefail
           mkdir -p docs/runs
-          echo "# Campaign runs" > docs/runs/index.md
-          echo >> docs/runs/index.md
-          echo "| Campaign | ai-memory ref | Completed | Pass |" >> docs/runs/index.md
-          echo "|---|---|---|---|" >> docs/runs/index.md
+          {
+            echo "# Campaign runs"
+            echo
+            echo "Each row links to the mkdocs-rendered campaign page plus the"
+            echo "self-contained offline evidence HTML shipped in the repo."
+            echo
+            echo "| Campaign | ai-memory ref | Completed | Pass | Evidence |"
+            echo "|---|---|---|---|---|"
+          } > docs/runs/index.md
           # List newest first — rely on lexicographic sort since
           # campaign ids are monotonic v0.6.0.0-final-rN.
           for dir in $(ls -1d runs/*/ | sort -r); do
@@ -57,8 +74,9 @@ jobs:
             ref=$(jq -r '.ai_memory_git_ref // "?"' "$summary")
             completed=$(jq -r '.completed_at // "?"' "$summary")
             pass=$(jq -r '.overall_pass // false' "$summary")
-            badge=$([ "$pass" = "true" ] && echo "✅ PASS" || echo "❌ FAIL")
-            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${badge} |" >> docs/runs/index.md
+            badge=$([ "$pass" = "true" ] && echo "PASS" || echo "FAIL")
+            evidence="[offline HTML](../evidence/${name}/index.html)"
+            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${badge} | ${evidence} |" >> docs/runs/index.md
 
             out="docs/runs/${name}.md"
             {
@@ -67,6 +85,8 @@ jobs:
               echo "- **ai-memory ref**: \`${ref}\`"
               echo "- **Completed at**: ${completed}"
               echo "- **Overall pass**: ${badge}"
+              echo "- **Offline evidence**: [index.html](../evidence/${name}/index.html)"
+              echo "  (self-contained page with every artefact, browsable from a clone of the repo)"
               echo
               echo "## Phase summaries"
               echo
@@ -99,6 +119,19 @@ jobs:
 
       - name: Build site
         run: mkdocs build
+
+      # mkdocs only publishes content under docs/. The per-run
+      # index.html files live next to the JSON artefacts under runs/
+      # so a clone of the repo is self-contained. To make those same
+      # HTMLs reachable from the deployed Pages site, copy the whole
+      # runs/ tree into site/evidence/ as a post-build step. The
+      # Markdown campaign pages link into ../evidence/<run>/ so
+      # operators can download the raw JSON right next to the HTML.
+      - name: Mirror runs/ to site/evidence/ for offline-evidence links
+        run: |
+          set -euo pipefail
+          mkdir -p site/evidence
+          cp -r runs/. site/evidence/
 
       - uses: actions/upload-pages-artifact@v3
         with:
