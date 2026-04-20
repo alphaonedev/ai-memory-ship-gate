@@ -269,6 +269,7 @@ jobs:
       - name: Commit campaign artifacts
         if: always()
         run: |
+          set +e
           CAMPAIGN_DIR="runs/${{ github.event.inputs.campaign_id }}"
           mkdir -p "$CAMPAIGN_DIR"
           cp phase-reports/*.json "$CAMPAIGN_DIR/" 2>/dev/null || true
@@ -280,9 +281,31 @@ jobs:
           bash scripts/generate_run_html.sh "$CAMPAIGN_DIR" || true
           git config user.name "ship-gate-bot"
           git config user.email "ship-gate-bot@users.noreply.github.com"
-          git add "$CAMPAIGN_DIR" 2>/dev/null || true
-          git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artifacts" 2>/dev/null || true
-          git push 2>/dev/null || true
+          git add "$CAMPAIGN_DIR" || true
+          # Nothing to commit is not an error — --allow-empty-message fails
+          # silently when there's no diff, but --porcelain tells us directly.
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "::notice::no campaign artifacts to commit"
+            exit 0
+          fi
+          git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artifacts" || true
+          # Push with rebase-on-reject retry. The prior `|| true` swallowed
+          # reject-because-non-fast-forward errors silently, which left
+          # several campaigns (r19, r20) without artifacts on main because
+          # a concurrent push from another workflow had advanced the tip.
+          # Retry up to 5 times with fetch+rebase in between.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "::notice::campaign artifacts pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::push rejected on attempt $attempt; fetching + rebasing"
+            git fetch origin main
+            git rebase origin/main || { echo "::error::rebase conflict"; git rebase --abort; exit 1; }
+            sleep $((attempt * 2))
+          done
+          echo "::error::failed to push campaign artifacts after 5 attempts"
+          exit 1
 
       - name: Tear down infrastructure
         if: always()
