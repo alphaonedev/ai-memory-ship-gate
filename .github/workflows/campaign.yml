@@ -103,10 +103,18 @@ jobs:
         id: wait
         run: |
           set -e
+          # PUBLIC IPs — used by the runner's SSH to reach droplets.
           NODE_A_IP=$(jq -r '.peer_nodes.value["node-a"].public' terraform-output.json)
           NODE_B_IP=$(jq -r '.peer_nodes.value["node-b"].public' terraform-output.json)
           NODE_C_IP=$(jq -r '.peer_nodes.value["node-c"].public' terraform-output.json)
           CHAOS_IP=$(jq -r '.chaos_client.value' terraform-output.json)
+          # PRIVATE IPs — used by peer-to-peer federation traffic. The
+          # firewall allow-rule on port 9077 targets private IPs only, so
+          # inter-droplet HTTP MUST use these; public-IP traffic would be
+          # dropped as not-allow-listed.
+          NODE_A_PRIV=$(jq -r '.peer_nodes.value["node-a"].private' terraform-output.json)
+          NODE_B_PRIV=$(jq -r '.peer_nodes.value["node-b"].private' terraform-output.json)
+          NODE_C_PRIV=$(jq -r '.peer_nodes.value["node-c"].private' terraform-output.json)
 
           failed=0
           for role in a:$NODE_A_IP b:$NODE_B_IP c:$NODE_C_IP chaos:$CHAOS_IP; do
@@ -126,10 +134,13 @@ jobs:
             [ "$ready" = true ] || { echo "::error::node-$key SSH never responded"; failed=1; }
           done
 
-          echo "node_a=$NODE_A_IP" >> "$GITHUB_OUTPUT"
-          echo "node_b=$NODE_B_IP" >> "$GITHUB_OUTPUT"
-          echo "node_c=$NODE_C_IP" >> "$GITHUB_OUTPUT"
-          echo "chaos=$CHAOS_IP"  >> "$GITHUB_OUTPUT"
+          echo "node_a=$NODE_A_IP"       >> "$GITHUB_OUTPUT"
+          echo "node_b=$NODE_B_IP"       >> "$GITHUB_OUTPUT"
+          echo "node_c=$NODE_C_IP"       >> "$GITHUB_OUTPUT"
+          echo "chaos=$CHAOS_IP"         >> "$GITHUB_OUTPUT"
+          echo "node_a_priv=$NODE_A_PRIV" >> "$GITHUB_OUTPUT"
+          echo "node_b_priv=$NODE_B_PRIV" >> "$GITHUB_OUTPUT"
+          echo "node_c_priv=$NODE_C_PRIV" >> "$GITHUB_OUTPUT"
           exit $failed
 
       # ───── Provision droplets via SSH (full control, every step logged) ─────
@@ -175,6 +186,16 @@ jobs:
               scp -r -o StrictHostKeyChecking=no -q ai-memory-mcp/packaging root@"$ip":/opt/ai-memory-mcp/
             fi
 
+            # Phase 2 reconfigures `ai-memory serve` across all peers
+            # via SSH; it runs ON the chaos client which therefore needs
+            # the campaign SSH key to reach the peers. Deploy it here
+            # (run 8 of ship-gate exposed this gap — phase 2 got an
+            # exit 255 because chaos had no private key).
+            if [ "$key" = "chaos" ]; then
+              scp -o StrictHostKeyChecking=no -q ~/.ssh/id_ed25519 root@"$ip":/root/.ssh/id_ed25519
+              ssh -o StrictHostKeyChecking=no root@"$ip" "chmod 600 /root/.ssh/id_ed25519"
+            fi
+
             echo "::endgroup::"
           done
 
@@ -201,10 +222,17 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no scripts/phase2_multiagent.sh \
             root@${{ steps.wait.outputs.chaos }}:/root/phase2.sh
+          # Pass BOTH public + private IPs. Public for SSH-reconfigure
+          # (chaos → peer control plane), private for the write burst
+          # (peer-to-peer federation uses the VPC-only firewall allow
+          # rule on port 9077).
           ssh -o StrictHostKeyChecking=no root@${{ steps.wait.outputs.chaos }} \
             "NODE_A_IP=${{ steps.wait.outputs.node_a }} \
              NODE_B_IP=${{ steps.wait.outputs.node_b }} \
              NODE_C_IP=${{ steps.wait.outputs.node_c }} \
+             NODE_A_PRIV=${{ steps.wait.outputs.node_a_priv }} \
+             NODE_B_PRIV=${{ steps.wait.outputs.node_b_priv }} \
+             NODE_C_PRIV=${{ steps.wait.outputs.node_c_priv }} \
              bash /root/phase2.sh" \
              > phase-reports/phase2.json
 

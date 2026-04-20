@@ -16,6 +16,9 @@ set -euo pipefail
 : "${NODE_A_IP:?}"
 : "${NODE_B_IP:?}"
 : "${NODE_C_IP:?}"
+: "${NODE_A_PRIV:?}"
+: "${NODE_B_PRIV:?}"
+: "${NODE_C_PRIV:?}"
 
 AGENTS=(ai:agent-alice ai:agent-bob ai:agent-charlie ai:agent-dana)
 WRITES_PER_AGENT=50
@@ -24,16 +27,18 @@ NS=ship-gate-phase2
 log() { printf '[phase2] %s\n' "$*" >&2; }
 
 # ---- Reconfigure serve on each peer with --quorum-writes 2 ----
-# Assumes cloud-init left `ai-memory serve` running with default
-# flags. For this phase we kill + restart with federation turned on.
-# (Production deployments would use systemd overrides; the phase
-# script trades cleanliness for transparency.)
-for node in "$NODE_A_IP" "$NODE_B_IP" "$NODE_C_IP"; do
-  log "reconfigure serve on $node"
-  ssh -o StrictHostKeyChecking=no root@"$node" bash -s -- \
-    "$NODE_A_IP" "$NODE_B_IP" "$NODE_C_IP" <<'REMOTE'
+# SSH uses PUBLIC IPs (control plane); federation/quorum uses PRIVATE
+# IPs (VPC-only firewall allow rule on 9077). Writing from chaos also
+# uses the PRIVATE IP of node-a so the source IP at node-a matches the
+# chaos_client.ipv4_address_private that the firewall permits.
+for role in a:"$NODE_A_IP" b:"$NODE_B_IP" c:"$NODE_C_IP"; do
+  key=${role%%:*}; ip=${role##*:}
+  log "reconfigure serve on node-$key ($ip)"
+  ssh -o StrictHostKeyChecking=no root@"$ip" bash -s -- \
+    "$NODE_A_PRIV" "$NODE_B_PRIV" "$NODE_C_PRIV" <<'REMOTE'
 set -e
 A="$1"; B="$2"; C="$3"
+# Identify which private IP this host owns so we skip it in the peer list.
 HOST_IP=$(hostname -I | awk '{print $1}')
 PEERS=""
 [ "$HOST_IP" != "$A" ] && PEERS="http://$A:9077"
@@ -53,6 +58,8 @@ REMOTE
 done
 
 # ---- Multi-agent write burst -----------------------------------
+# All curls go to private IPs; chaos's private IP is the source and
+# is in the firewall allow-list.
 log "write burst: 4 agents × 50 writes"
 OK=0; FAIL=0; QNM=0
 for AGENT in "${AGENTS[@]}"; do
@@ -60,7 +67,7 @@ for AGENT in "${AGENTS[@]}"; do
     CODE=$(curl -sS -o /tmp/resp.json -w '%{http_code}' \
       -H "X-Agent-Id: $AGENT" \
       -H "Content-Type: application/json" \
-      -X POST "http://$NODE_A_IP:9077/api/v1/memories" \
+      -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
       -d "{\"tier\":\"mid\",\"namespace\":\"$NS\",\"title\":\"$AGENT-w$i\",\"content\":\"multi-agent write $AGENT seq $i\",\"priority\":5,\"confidence\":1.0,\"source\":\"ship-gate\",\"metadata\":{}}" \
       2>/dev/null || echo 000)
     case "$CODE" in
@@ -83,7 +90,7 @@ sleep "$SETTLE_SECS"
 
 # ---- Convergence check -----------------------------------------
 declare -A COUNTS
-for role in A:$NODE_A_IP B:$NODE_B_IP C:$NODE_C_IP; do
+for role in A:"$NODE_A_PRIV" B:"$NODE_B_PRIV" C:"$NODE_C_PRIV"; do
   key=${role%%:*}; ip=${role##*:}
   n=$(curl -sS "http://$ip:9077/api/v1/memories?namespace=$NS&limit=1000" \
       | jq '.memories | length' 2>/dev/null || echo 0)
@@ -92,12 +99,13 @@ for role in A:$NODE_A_IP B:$NODE_B_IP C:$NODE_C_IP; do
 done
 
 # ---- Quorum-not-met probe --------------------------------------
+# SSH (control plane) still uses public IPs; curl writes use private.
 log "probe: kill node-b, confirm node-a still meets quorum via node-c"
 ssh -o StrictHostKeyChecking=no root@"$NODE_B_IP" "pkill -f 'ai-memory serve' || true"
 sleep 2
 PROBE1=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
-  -X POST "http://$NODE_A_IP:9077/api/v1/memories" \
+  -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
   -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe1\",\"title\":\"probe1-$(date +%s)\",\"content\":\"single-peer-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"probe\",\"metadata\":{}}" \
   2>/dev/null || echo 000)
 
@@ -106,7 +114,7 @@ ssh -o StrictHostKeyChecking=no root@"$NODE_C_IP" "pkill -f 'ai-memory serve' ||
 sleep 2
 PROBE2=$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "X-Agent-Id: ai:probe" -H "Content-Type: application/json" \
-  -X POST "http://$NODE_A_IP:9077/api/v1/memories" \
+  -X POST "http://$NODE_A_PRIV:9077/api/v1/memories" \
   -d "{\"tier\":\"mid\",\"namespace\":\"$NS-probe2\",\"title\":\"probe2-$(date +%s)\",\"content\":\"both-peers-down probe\",\"priority\":5,\"confidence\":1.0,\"source\":\"probe\",\"metadata\":{}}" \
   2>/dev/null || echo 000)
 
