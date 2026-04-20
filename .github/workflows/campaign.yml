@@ -102,10 +102,12 @@ jobs:
             echo "::endgroup::"
             if [ "$ready" = false ]; then
               echo "::error::node-$key ($ip) never became ready — cloud-init build probably failed"
-              # Pull the last 100 lines of cloud-init log for diagnosis.
+              # Pull both cloud-init AND bootstrap logs — bootstrap is
+              # where the actual build output lives (cloud-init log has
+              # only the invocation).
               ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
-                   root@"$ip" "tail -n 100 /var/log/cloud-init-output.log" \
-                   2>&1 | sed "s/^/[node-$key cloud-init] /" || true
+                   root@"$ip" "echo '=== cloud-init-output.log (tail 50) ==='; tail -n 50 /var/log/cloud-init-output.log; echo '=== ai-memory-bootstrap.log (tail 200) ==='; tail -n 200 /var/log/ai-memory-bootstrap.log 2>/dev/null || echo '(bootstrap log absent — runcmd never fired)'; echo '=== status ==='; test -f /etc/ai-memory/ready && echo 'marker present' || echo 'marker absent'; command -v ai-memory && ai-memory --version || echo 'ai-memory not installed'" \
+                   2>&1 | sed "s/^/[node-$key] /" || true
               failed=1
             fi
           done
