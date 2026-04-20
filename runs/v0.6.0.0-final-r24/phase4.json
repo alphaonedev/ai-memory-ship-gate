@@ -1,0 +1,13 @@
+{
+  "phase": 4,
+  "pass": false,
+  "cycles_per_fault": 50,
+  "writes_per_cycle": 100,
+  "convergence_by_fault": {
+    "partition_minority": 0.2,
+    "kill_primary_mid_write": 1
+  },
+  "reasons": [
+    "partition_minority: 0.2 < 0.995"
+  ]
+}
