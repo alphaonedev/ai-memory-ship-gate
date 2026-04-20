@@ -1,0 +1,11 @@
+{
+  "phase": 3,
+  "pass": true,
+  "src_count": 1000,
+  "dst_count": 1000,
+  "report_forward": {"memories_read": 1000, "memories_written": 1000, "errors": []},
+  "report_idempotent": {"memories_read": 1000, "memories_written": 1000, "errors": []},
+  "report_reverse": {"memories_read": 1000, "memories_written": 1000, "errors": []},
+  "reasons": [""],
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24669844796"
+}

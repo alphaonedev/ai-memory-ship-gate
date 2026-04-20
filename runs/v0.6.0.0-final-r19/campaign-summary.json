@@ -1,0 +1,8 @@
+{
+  "campaign_id": "v0.6.0.0-final-r19",
+  "ai_memory_git_ref": "release/v0.6.0",
+  "completed_at": "2026-04-20T13:30:34Z",
+  "overall_pass": false,
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24668417320",
+  "_reconstruction_note": "Original campaign artefact commit failed silently because of a non-fast-forward push rejection (fixed in ship-gate commit 3cfbc36). These values are transcribed from the workflow's stdout log and reflect what the bot WOULD have committed had the push succeeded. Phase 1 per-node details are not recoverable at this fidelity and are omitted."
+}

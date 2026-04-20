@@ -1,0 +1,14 @@
+{
+  "phase": 4,
+  "pass": false,
+  "cycles_per_fault": 50,
+  "writes_per_cycle": 100,
+  "convergence_by_fault": {
+    "kill_primary_mid_write": 1.0,
+    "partition_minority": 0.2
+  },
+  "reasons": [
+    "partition_minority: 0.2 < 0.995"
+  ],
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24668417320"
+}

@@ -1,0 +1,8 @@
+{
+  "campaign_id": "v0.6.0.0-final-r20",
+  "ai_memory_git_ref": "release/v0.6.0",
+  "completed_at": "2026-04-20T14:06:38Z",
+  "overall_pass": false,
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24669844796",
+  "_reconstruction_note": "Original campaign artifact commit failed silently because of the same non-fast-forward push rejection that lost r19 (workflow fix in commit 3cfbc36). Values transcribed from stdout."
+}

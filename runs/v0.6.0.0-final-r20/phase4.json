@@ -1,0 +1,14 @@
+{
+  "phase": 4,
+  "pass": false,
+  "cycles_per_fault": 50,
+  "writes_per_cycle": 100,
+  "convergence_by_fault": {
+    "kill_primary_mid_write": 1.0,
+    "partition_minority": 0.2
+  },
+  "reasons": [
+    "partition_minority: 0.2 < 0.995 (with PR #313's 3s post-write settle — the settle was not the bottleneck; partition-recovery timing is the real signal)"
+  ],
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24669844796"
+}

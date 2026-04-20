@@ -1,0 +1,13 @@
+{
+  "phase": 2,
+  "pass": true,
+  "total_writes": 200,
+  "ok": 200,
+  "quorum_not_met": 0,
+  "fail": 0,
+  "counts": {"a": 200, "b": 200, "c": 200},
+  "probe1_single_peer_down": "201",
+  "probe2_both_peers_down": "503",
+  "reasons": [""],
+  "_reconstructed_from": "https://github.com/alphaonedev/ai-memory-ship-gate/actions/runs/24669844796"
+}
