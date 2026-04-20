@@ -106,7 +106,7 @@ jobs:
               # where the actual build output lives (cloud-init log has
               # only the invocation).
               ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
-                   root@"$ip" "echo '=== cloud-init-output.log (tail 50) ==='; tail -n 50 /var/log/cloud-init-output.log; echo '=== ai-memory-bootstrap.log (tail 200) ==='; tail -n 200 /var/log/ai-memory-bootstrap.log 2>/dev/null || echo '(bootstrap log absent — runcmd never fired)'; echo '=== status ==='; test -f /etc/ai-memory/ready && echo 'marker present' || echo 'marker absent'; command -v ai-memory && ai-memory --version || echo 'ai-memory not installed'" \
+                   root@"$ip" "echo '=== cloud-init.log (grep runcmd/bootcmd/ERROR) ==='; grep -E 'runcmd|bootcmd|ERROR|Disabled|Skipped|user_data|schema' /var/log/cloud-init.log 2>/dev/null | head -40; echo '=== cloud-init-output.log (tail 50) ==='; tail -n 50 /var/log/cloud-init-output.log; echo '=== bootcmd marker ==='; cat /var/log/aim-bootcmd.log 2>/dev/null || echo '(bootcmd marker absent)'; echo '=== runcmd marker ==='; cat /var/log/aim-runcmd.log 2>/dev/null || echo '(runcmd marker absent)'; echo '=== bootstrap log (tail 100) ==='; tail -n 100 /var/log/ai-memory-bootstrap.log 2>/dev/null || echo '(bootstrap log absent)'; echo '=== status ==='; test -f /etc/ai-memory/ready && echo 'marker present' || echo 'marker absent'; command -v ai-memory && ai-memory --version || echo 'ai-memory not installed'" \
                    2>&1 | sed "s/^/[node-$key] /" || true
               failed=1
             fi

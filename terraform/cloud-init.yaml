@@ -2,45 +2,45 @@
 # Copyright 2026 AlphaOne LLC
 # SPDX-License-Identifier: Apache-2.0
 #
-# Minimal bootstrap: write ONE shell script, invoke it via runcmd.
-# All complexity lives in the script so failures are inspectable via
-# /var/log/ai-memory-bootstrap.log rather than scattered across
-# cloud-init-output.log. Runs 4+5 showed cloud-init silently skipping
-# runcmd when directives got too ornate; this is the defensive shape.
+# Diagnosis run: isolate which cloud-init stages actually fire on DO's
+# ubuntu-24-04-x64 image. Runs 4+5+6 all had runcmd mysteriously
+# skipped. This run collects evidence: bootcmd writes a marker, runcmd
+# writes another, then the build. If bootcmd fires but runcmd doesn't,
+# we know which module is disabled / broken. If neither fires, it's a
+# datasource / schema issue.
 
-package_update: true
-package_upgrade: false
+bootcmd:
+  - [cloud-init-per, once, bootcmd-marker, sh, -c, 'echo "bootcmd fired $(date -u)" > /var/log/aim-bootcmd.log']
 
-packages:
-  - build-essential
-  - pkg-config
-  - libssl-dev
-  - ca-certificates
-  - curl
-  - git
-  - jq
-  - iptables
-  - ufw
-  - sqlite3
+runcmd:
+  - echo "runcmd stage 1 fired $(date -u)" > /var/log/aim-runcmd.log
+  - bash /usr/local/sbin/ai-memory-bootstrap > /var/log/ai-memory-bootstrap.log 2>&1
 
 write_files:
   - path: /usr/local/sbin/ai-memory-bootstrap
     permissions: "0755"
     content: |
       #!/usr/bin/env bash
-      # Bootstrap script — all runcmd work happens here, with set -x
-      # so every command shows up in the log.
       set -euxo pipefail
+
+      echo "bootstrap entered at $(date -u)"
 
       AI_MEMORY_GIT_REF="${ai_memory_git_ref}"
       DEAD_MAN_SWITCH_HOURS="${dead_man_switch_hours}"
 
-      # 1. Cost ceiling FIRST — schedule shutdown before anything else.
+      # 1. Cost ceiling — schedule shutdown ASAP.
       MINS=$((DEAD_MAN_SWITCH_HOURS * 60))
       shutdown -P "+$MINS" "ai-memory ship-gate dead-man switch" &
       disown || true
 
-      # 2. Swap — defense in depth against rustc OOM.
+      # 2. Packages (via apt-get directly so we don't depend on
+      # cloud-init's packages: directive, which may or may not fire).
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -y
+      apt-get install -y build-essential pkg-config libssl-dev ca-certificates \
+                         curl git jq iptables ufw sqlite3
+
+      # 3. Swap — defense in depth against rustc OOM.
       if [ ! -f /swapfile ]; then
         fallocate -l 8G /swapfile
         chmod 600 /swapfile
@@ -50,13 +50,13 @@ write_files:
       fi
       free -h
 
-      # 3. Rust toolchain pinned at repo MSRV.
+      # 4. Rust toolchain pinned at repo MSRV.
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
         | sh -s -- -y --default-toolchain 1.88 --profile minimal
       export PATH="/root/.cargo/bin:$PATH"
       rustc --version
 
-      # 4. Clone + build ai-memory-mcp at the pinned ref.
+      # 5. Clone + build ai-memory-mcp at the pinned ref.
       cd /opt
       rm -rf ai-memory-mcp
       git clone https://github.com/alphaonedev/ai-memory-mcp.git
@@ -64,27 +64,19 @@ write_files:
       git checkout "$AI_MEMORY_GIT_REF"
       git rev-parse HEAD
 
-      # CARGO_BUILD_JOBS=2 keeps peak rustc memory bounded even with
-      # 4 vCPU + 8 GB RAM + 8 GB swap — parallel codegen units are
-      # where the OOM-killer comes for you.
       CARGO_BUILD_JOBS=2 cargo build --release
 
-      # 5. Install + version sanity.
+      # 6. Install + version sanity.
       install -m 0755 target/release/ai-memory /usr/local/bin/ai-memory
       ai-memory --version
+      mkdir -p /etc/ai-memory
       ai-memory --version > /etc/ai-memory/version
 
-      # 6. UFW last — prevents locking out the runner mid-setup.
+      # 7. UFW last — don't lock the runner out mid-setup.
       ufw allow 22/tcp
       ufw allow 9077/tcp
       ufw --force enable
 
-      # 7. Readiness marker — ONLY after every step above succeeded.
+      # 8. Readiness marker — only after every step above succeeded.
       touch /etc/ai-memory/ready
-      echo "ai-memory-bootstrap complete at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-runcmd:
-  # One line. All complexity is inside the bootstrap script so the log
-  # is a single file and failures show in /var/log/ai-memory-bootstrap.log.
-  - mkdir -p /etc/ai-memory
-  - bash /usr/local/sbin/ai-memory-bootstrap > /var/log/ai-memory-bootstrap.log 2>&1
+      echo "ai-memory-bootstrap complete at $(date -u)"
