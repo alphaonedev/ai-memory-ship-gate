@@ -2,7 +2,7 @@ site_name: ai-memory ship-gate
 site_description: >-
   Peer-reviewable, reproducible release-testing infrastructure for
   ai-memory-mcp. Multi-agent / multi-node / chaos testing on real
-  DigitalOcean infrastructure, with per-campaign artefacts published
+  DigitalOcean infrastructure, with per-campaign artifacts published
   to this site.
 site_url: https://alphaonedev.github.io/ai-memory-ship-gate/
 repo_url: https://github.com/alphaonedev/ai-memory-ship-gate

@@ -3,7 +3,7 @@
 This repo tests [ai-memory-mcp](https://github.com/alphaonedev/ai-memory-mcp).
 Bugs in the _test infrastructure itself_ (Terraform, scripts,
 workflows, docs) get filed and fixed here. Bugs in ai-memory-mcp's
-behaviour get filed in its own repo with a link to the failing
+behavior get filed in its own repo with a link to the failing
 campaign.
 
 ## Before opening a PR
@@ -30,7 +30,7 @@ To add a fault class:
 4. Include a rationale — what fault mode does this catch that the
    existing four don't?
 
-## Cost-optimisation ideas welcome
+## Cost-optimization ideas welcome
 
 Cheaper campaigns without losing validation signal are always
 accepted. Current baseline is ~$0.65 per clean run; PRs that

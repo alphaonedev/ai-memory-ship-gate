@@ -81,7 +81,7 @@
         <h3>What this campaign tested</h3>
         <p>4×50-write burst, 90s settle, full probe sequence.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is cancelled by `joins.shutdown().await` once quorum is met.</p>
+        <p>Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is canceled by `joins.shutdown().await` once quorum is met.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
@@ -102,7 +102,7 @@
           <li>
             <p class="bug-title">Federation post-quorum fanout aborted mid-POST (silent data-loss risk)</p>
             <p class="bug-field"><strong>Impact:</strong> Each write landed on leader + only ONE peer instead of all three. No sync-daemon in Phase 2 means permanent lag. A node failure between quorum-ack and catch-up would lose the write.</p>
-            <p class="bug-field"><strong>Root cause:</strong> `tokio::task::JoinSet::shutdown().await` after early-exit cancelled in-flight spawned tasks. Detaching them instead preserves delivery.</p>
+            <p class="bug-field"><strong>Root cause:</strong> `tokio::task::JoinSet::shutdown().await` after early-exit canceled in-flight spawned tasks. Detaching them instead preserves delivery.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/309" rel="noopener">PR #309 (MERGED)</a></li>
@@ -364,7 +364,7 @@
         </details>
       </section>
     <section>
-      <h2>All artefacts</h2>
+      <h2>All artifacts</h2>
       <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
       <ul>
         <li><a href="./campaign-summary.json">campaign-summary.json</a></li>

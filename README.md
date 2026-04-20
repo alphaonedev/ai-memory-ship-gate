@@ -8,7 +8,7 @@ published live to GitHub Pages.
 
 - **Campaign dashboard**: <https://alphaonedev.github.io/ai-memory-ship-gate/>
 - **Campaign workflow**: [`.github/workflows/campaign.yml`](.github/workflows/campaign.yml)
-- **Per-run artefacts**: [`runs/`](runs/)
+- **Per-run artifacts**: [`runs/`](runs/)
 - **Latest methodology**: [`docs/methodology.md`](docs/methodology.md)
 
 ---
@@ -19,7 +19,7 @@ Releasing infrastructure software without publishing the evidence of
 its correctness is asking users to take it on faith. ai-memory-mcp
 does the opposite. Every release candidate runs through this campaign
 on fresh DigitalOcean droplets, every phase produces a signed JSON
-artefact, every artefact lands in this repository, and every artefact
+artifact, every artifact lands in this repository, and every artifact
 is rendered into a public web page. If you want to dispute a finding,
 fork the repo, point the workflow at your own DigitalOcean account,
 and reproduce the run in about fifteen minutes for roughly ten cents.
@@ -50,7 +50,7 @@ hardware, within the past few hours. Specifically:
 - Upgrades between the SQLite and Postgres storage backends don't
   corrupt anything.
 
-You don't have to take our word for any of this. Every artefact —
+You don't have to take our word for any of this. Every artifact —
 every write attempt, every crash, every count check — is in this
 repository under [`runs/`](runs/). Your IT administrator, your
 security reviewer, or your curious teenager can read them.
@@ -64,11 +64,11 @@ a release is blocked until we've fixed the thing that failed.
 
 - **Regression risk.** Every release candidate is validated against a
   four-phase protocol that exercises functional, federation,
-  migration, and chaos behaviours. Campaign status is a hard gate on
+  migration, and chaos behaviors. Campaign status is a hard gate on
   publishing a git tag; a red campaign means no tag, no package, no
   Docker image. Product can see what is and isn't shippable at any
   moment in time.
-- **Audit posture.** Artefacts are immutable, versioned, and public.
+- **Audit posture.** Artifacts are immutable, versioned, and public.
   A compliance reviewer asking "how do you know this build is safe
   for production?" gets a URL, not a narrative. Every campaign run is
   signed by GitHub Actions (OIDC via `actions/deploy-pages@v4`) and
@@ -133,7 +133,7 @@ script, check that the change strengthens at least one of these.
    timing, about kernel-level partition semantics, about what happens
    when SIGKILL races with an open WAL. Real droplets don't.
 3. **Publish evidence, not claims.** Every assertion is paired with
-   the artefact that established it. "Phase 2 passed" is a sentence;
+   the artifact that established it. "Phase 2 passed" is a sentence;
    `runs/v0.6.0.0-final-rN/phase2.json` is the thing that makes the
    sentence true.
 4. **Keep the methodology peer-reviewable.** Scripts are shell, not

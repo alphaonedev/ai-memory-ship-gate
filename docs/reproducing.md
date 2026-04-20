@@ -21,7 +21,7 @@ The CI workflow reads four secrets:
 | Secret | Contents |
 |---|---|
 | `DIGITALOCEAN_TOKEN` | DO personal access token with droplet create/delete + ssh_key read |
-| `DIGITALOCEAN_SSH_KEY_FINGERPRINT` | SHA-256 fingerprint of the key you want cloud-init to authorise |
+| `DIGITALOCEAN_SSH_KEY_FINGERPRINT` | SHA-256 fingerprint of the key you want cloud-init to authorize |
 | `DIGITALOCEAN_SSH_PRIVATE_KEY` | The matching private key (PEM), used by the runner to ssh into droplets |
 
 Set them:
@@ -59,7 +59,7 @@ gh workflow run campaign.yml \
 ```
 
 The workflow provisions infrastructure, runs all four phases, tears
-down infrastructure, commits artefacts to `runs/my-validation-run/`,
+down infrastructure, commits artifacts to `runs/my-validation-run/`,
 and publishes the site.
 
 ## Step 4 — Verify the teardown

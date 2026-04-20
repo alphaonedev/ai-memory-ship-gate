@@ -37,7 +37,7 @@ jobs:
       # Make sure every run directory has a self-contained index.html
       # (the generator is idempotent — re-running it re-emits the same
       # bytes). The same HTML is committed to the repo by the campaign
-      # workflow's artefact commit step, but regenerating here keeps
+      # workflow's artifact commit step, but regenerating here keeps
       # older runs that predate that automation up-to-date.
       - name: Backfill per-run index.html
         run: |
@@ -119,7 +119,7 @@ jobs:
               echo "- **Completed at**: ${completed}"
               echo "- **Outcome**: ${outcome}"
               echo "- **Offline evidence**: [index.html](../evidence/${name}/index.html)"
-              echo "  (self-contained page with every artefact plus AI NHI tri-audience analysis)"
+              echo "  (self-contained page with every artifact plus AI NHI tri-audience analysis)"
               echo
               echo "## Phase summaries"
               echo
@@ -154,7 +154,7 @@ jobs:
         run: mkdocs build
 
       # mkdocs only publishes content under docs/. The per-run
-      # index.html files live next to the JSON artefacts under runs/
+      # index.html files live next to the JSON artifacts under runs/
       # so a clone of the repo is self-contained. To make those same
       # HTMLs reachable from the deployed Pages site, copy the whole
       # runs/ tree into site/evidence/ as a post-build step. The

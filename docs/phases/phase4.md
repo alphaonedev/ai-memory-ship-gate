@@ -69,8 +69,8 @@ benefit. The skew case is simulated (the chaos harness records
 the injection intent so the claim shape is honest) while the three
 tangible fault classes carry the weight of the phase's evidence.
 
-## Output artefact
+## Output artifact
 
 `runs/<campaign-id>/phase4.json` — convergence bound per fault
 class plus the raw JSONL from each campaign embedded as a
-`runs/<campaign-id>/phase4-<fault>.jsonl` artefact (when large).
+`runs/<campaign-id>/phase4-<fault>.jsonl` artifact (when large).

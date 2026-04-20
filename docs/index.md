@@ -18,8 +18,8 @@ site is where the evidence is published.
 Releasing infrastructure software without publishing the evidence of
 its correctness is asking users to take it on faith. ai-memory-mcp
 does the opposite. Every release candidate runs through this campaign
-on fresh DigitalOcean droplets, every phase produces a JSON artefact,
-every artefact lands in this repository, and every artefact is
+on fresh DigitalOcean droplets, every phase produces a JSON artifact,
+every artifact lands in this repository, and every artifact is
 rendered into a browsable page on this site. If you want to dispute a
 finding, fork the repo, point the workflow at your own DigitalOcean
 account, and reproduce the run in about fifteen minutes for roughly
@@ -50,7 +50,7 @@ audiences, same underlying truth, three framings:
     - Upgrades between SQLite and Postgres storage don't corrupt
       anything.
 
-    You don't have to take our word for any of this. Every artefact
+    You don't have to take our word for any of this. Every artifact
     — every write attempt, every crash, every count check — is
     linked from [Campaign runs](runs/). Your IT administrator, your
     security reviewer, or your curious teenager can read them.
@@ -64,11 +64,11 @@ audiences, same underlying truth, three framings:
 
     - **Regression risk.** Every release candidate is validated
       against a four-phase protocol that exercises functional,
-      federation, migration, and chaos behaviours. Campaign status
+      federation, migration, and chaos behaviors. Campaign status
       is a hard gate on publishing a git tag. A red campaign means
       no tag, no package, no Docker image. Product leadership can
       see what is and isn't shippable at any moment in time.
-    - **Audit posture.** Artefacts are immutable, versioned, and
+    - **Audit posture.** Artifacts are immutable, versioned, and
       public. A compliance reviewer asking "how do you know this
       build is safe for production?" gets a URL, not a narrative.
       Every campaign run is signed by GitHub Actions (OIDC) and
@@ -126,7 +126,7 @@ doesn't strengthen one of these, it doesn't belong.
    timing, about kernel-level partition semantics, about SIGKILL
    racing with an open WAL. Real droplets don't.
 3. **Publish evidence, not claims.** Every assertion is paired with
-   the artefact that established it. Sentences aren't truth;
+   the artifact that established it. Sentences aren't truth;
    `runs/<campaign>/phase2.json` is the thing that makes sentences
    true.
 4. **Keep the methodology peer-reviewable.** Scripts are shell, not

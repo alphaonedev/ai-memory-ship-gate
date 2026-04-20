@@ -266,7 +266,7 @@ jobs:
             bash scripts/collect_reports.sh \
               campaign-summary.json phase-reports || true
 
-      - name: Commit campaign artefacts
+      - name: Commit campaign artifacts
         if: always()
         run: |
           CAMPAIGN_DIR="runs/${{ github.event.inputs.campaign_id }}"
@@ -275,13 +275,13 @@ jobs:
           cp campaign-summary.json "$CAMPAIGN_DIR/" 2>/dev/null || true
           # Emit the self-contained offline-evidence HTML next to the
           # JSONs so clones of the repo are browsable without a pages
-          # build. `|| true` so the artefact commit still lands even
+          # build. `|| true` so the artifact commit still lands even
           # if the generator chokes on a malformed JSON.
           bash scripts/generate_run_html.sh "$CAMPAIGN_DIR" || true
           git config user.name "ship-gate-bot"
           git config user.email "ship-gate-bot@users.noreply.github.com"
           git add "$CAMPAIGN_DIR" 2>/dev/null || true
-          git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artefacts" 2>/dev/null || true
+          git commit -m "campaign: ${{ github.event.inputs.campaign_id }} artifacts" 2>/dev/null || true
           git push 2>/dev/null || true
 
       - name: Tear down infrastructure

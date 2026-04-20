@@ -120,7 +120,7 @@ min(count_node1_per_cycle, count_node2_per_cycle) / total_ok
 on both live peers. Earlier versions used `ok / total_writes`, which
 was mathematically capped at ~2% for kill-type faults and made the
 0.995 threshold unreachable (see the run-17/18 post-mortem in the
-campaign artefacts).
+campaign artifacts).
 
 **Pass per class**: convergence_bound ≥ 0.995.
 **Pass overall**: all enabled classes pass.

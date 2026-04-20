@@ -10,7 +10,7 @@
 #      verdict, what-was-tested, three-audience commentary, bugs
 #      with links to the issues/PRs that fixed them.
 #   2. Per-phase JSON dossiers — prettified and collapsed.
-#   3. Raw artefact list — every JSON in the directory.
+#   3. Raw artifact list — every JSON in the directory.
 #
 # Usage:
 #   ./scripts/generate_run_html.sh runs/v0.6.0.0-final-r19
@@ -351,7 +351,7 @@ phase_block() {
   [ "${#files[@]}" -gt 0 ] || return 0
 
   # Phase-level PASS/FAIL badge: aggregate the pass_of() result for
-  # every artefact in this phase. ANY failing artefact → phase FAIL.
+  # every artifact in this phase. ANY failing artifact → phase FAIL.
   local phase_ok=true
   for f in "${files[@]}"; do
     [ "$(pass_of "$f")" = "PASS" ] || { phase_ok=false; break; }
@@ -473,7 +473,7 @@ for p in 1 2 3 4; do phase_block "$p"; done
 
 cat <<EOF
     <section>
-      <h2>All artefacts</h2>
+      <h2>All artifacts</h2>
       <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
       <ul>
 EOF

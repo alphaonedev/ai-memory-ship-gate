@@ -69,6 +69,6 @@ silently-passing one. The probes prove that:
    hanging or silently succeeding — confirming the quorum
    contract is enforced.
 
-## Output artefact
+## Output artifact
 
 `runs/<campaign-id>/phase2.json` — single aggregated report.

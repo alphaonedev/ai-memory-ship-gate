@@ -33,6 +33,6 @@ list pointing at the specific check. Common causes and fixes:
 | `snapshot!=1` | Wrong `--keep` value or prior campaign debris left in `/tmp/ship-gate-backup-<host>` | `rm -rf /tmp/ship-gate-backup-*` and rerun |
 | `curator.errors>1` | Non-LLM error from the curator — likely a code regression | Check the curator report's `errors` field |
 
-## Output artefact
+## Output artifact
 
 `runs/<campaign-id>/phase1-node-<a|b|c>.json` — one file per peer.

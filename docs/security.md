@@ -57,7 +57,7 @@ cloud-init applies:
 
 - `ufw allow 22/tcp` + `ufw allow 9077/tcp` + `ufw --force enable`.
   No other ports.
-- Root SSH only via the pre-authorised key (no passwords).
+- Root SSH only via the pre-authorized key (no passwords).
 - Docker runs with default restricted privileges (no
   `--privileged`).
 - The dead-man switch self-destructs the droplet after N hours

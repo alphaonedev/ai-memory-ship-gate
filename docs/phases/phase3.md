@@ -51,7 +51,7 @@ support at the time of writing) dominates the campaign cost. The
 `pgvector/pgvector:pg16` Docker image on node-a delivers identical
 semantics for the test shape at $0 marginal cost.
 
-## Output artefact
+## Output artifact
 
 `runs/<campaign-id>/phase3.json` — forward, idempotent, reverse
 reports plus source/destination counts.

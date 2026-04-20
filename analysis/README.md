@@ -46,7 +46,7 @@ pending, and raw evidence below is unaffected.
 Every ship-gate campaign **must** be followed by one of these
 updates before the next run is dispatched.
 
-1. **Read the new run's artefacts.** Open
+1. **Read the new run's artifacts.** Open
    `runs/<campaign-id>/index.html` in a browser. Read each phase's
    Test Results checklist; confirm which asserts passed, which
    failed, and why.
@@ -68,7 +68,7 @@ updates before the next run is dispatched.
 ## Why the three audiences are non-negotiable
 
 Correctness claims land differently depending on the reader. The
-same JSON artefact that reads as "the cluster converged at 200/200
+same JSON artifact that reads as "the cluster converged at 200/200
 on all peers" to an SME reads as nothing at all to a VP of
 Engineering trying to decide whether to approve a release. Three
 framings on the same underlying truth is what turns evidence into

@@ -12,7 +12,7 @@
     "what_it_proved": "The Terraform module provisions, SSH keys propagate, cargo builds the release binary, and droplets clone the ai-memory-mcp tree. Campaign orchestration skeleton works.",
     "for_non_technical": "This is a very early run — think of it as a dress rehearsal before the real shows. It tells us the stage is built, the lights come on, and the cast can find their places. Whether the play itself is any good is measured by later runs.",
     "for_c_level": "Infrastructure readiness confirmed. The same Terraform + GitHub Actions + DigitalOcean pipeline that will gate every release candidate is functional. No product-level conclusions should be drawn from this run.",
-    "for_sme": "Candidate-stage artefacts reflect the pre-runner-driven methodology. Compare to post-f81bd76 runs (v0.6.0.0-final onwards) for apples-to-apples cost/time figures.",
+    "for_sme": "Candidate-stage artifacts reflect the pre-runner-driven methodology. Compare to post-f81bd76 runs (v0.6.0.0-final onwards) for apples-to-apples cost/time figures.",
     "bugs": [],
     "next_run_change": "Moved to the runner-driven SSH methodology (commit f81bd76 in ship-gate), cutting a 60-minute per-droplet budget to 13-15 minutes and campaign cost from ~$0.65 to ~$0.10."
   },
@@ -21,7 +21,7 @@
     "headline": "First \"final\" attempt — establishes the baseline",
     "verdict": "Ran the protocol end-to-end. Initial baseline for regression tracking.",
     "what_it_tested": "Full four-phase gate on fresh DigitalOcean infrastructure against release/v0.6.0 tip.",
-    "what_it_proved": "The campaign workflow, Terraform, and per-phase scripts are coherent enough to execute top-to-bottom and produce artefacts.",
+    "what_it_proved": "The campaign workflow, Terraform, and per-phase scripts are coherent enough to execute top-to-bottom and produce artifacts.",
     "for_non_technical": "A baseline. Future runs are judged by whether they get further or regress against this starting point.",
     "for_c_level": "First candidate tag-worthiness check completed. Per-phase evidence is pinned to the commit SHA. Provenance chain established.",
     "for_sme": "Establishes the `runs/` directory convention and the per-phase JSON contract that every subsequent campaign adheres to.",
@@ -116,7 +116,7 @@
     "headline": "Convergence STILL missed with 90s settle — federation fanout abort identified",
     "verdict": "Product bug uncovered. The harness is now correct; the product itself is losing writes to one peer per write.",
     "what_it_tested": "4×50-write burst, 90s settle, full probe sequence.",
-    "what_it_proved": "Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is cancelled by `joins.shutdown().await` once quorum is met.",
+    "what_it_proved": "Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is canceled by `joins.shutdown().await` once quorum is met.",
     "for_non_technical": "We found a real bug in the product itself, not just the test. Imagine sending a package to two warehouses for redundancy — the delivery truck stopped as soon as one warehouse signed for it, leaving the other still waiting. One package, one warehouse. If something happens to that warehouse before the second delivery catches up, you lose the package. The fix makes the truck finish all deliveries before driving away.",
     "for_c_level": "Silent data-loss risk identified and scoped. If a customer runs the 3-node federation configuration, approximately half of their writes would only have one redundant copy instead of two. A single node failure during a write burst could have lost data. This is exactly the class of bug the ship-gate exists to catch. Discovery cost: zero customer impact.",
     "for_sme": "`src/federation.rs::broadcast_store_quorum` spawns fanout POSTs in a JoinSet, waits for W-1 acks in a loop, then calls `joins.shutdown().await` which ABORTS still-in-flight tasks. Under W=2/N=3 with two concurrent fanouts racing, the loser's reqwest POST was being killed mid-flight — often before the receiving axum handler could commit. Net effect: every write landed on leader + 1 peer, leaving the other peer ~50% behind.",
@@ -124,7 +124,7 @@
       {
         "title": "Federation post-quorum fanout aborted mid-POST (silent data-loss risk)",
         "impact": "Each write landed on leader + only ONE peer instead of all three. No sync-daemon in Phase 2 means permanent lag. A node failure between quorum-ack and catch-up would lose the write.",
-        "root_cause": "`tokio::task::JoinSet::shutdown().await` after early-exit cancelled in-flight spawned tasks. Detaching them instead preserves delivery.",
+        "root_cause": "`tokio::task::JoinSet::shutdown().await` after early-exit canceled in-flight spawned tasks. Detaching them instead preserves delivery.",
         "fixed_in": [
           {"label": "PR #309 (MERGED)", "url": "https://github.com/alphaonedev/ai-memory-mcp/pull/309"},
           {"label": "Ship-gate issue #1 (CLOSED)", "url": "https://github.com/alphaonedev/ai-memory-ship-gate/issues/1"}
