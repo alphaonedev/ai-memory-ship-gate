@@ -62,8 +62,12 @@ jobs:
             echo "Each row links to the mkdocs-rendered campaign page plus the"
             echo "self-contained offline evidence HTML shipped in the repo."
             echo
-            echo "| Campaign | ai-memory ref | Completed | Outcome | Evidence |"
-            echo "|---|---|---|---|---|"
+            echo "Phase badges are per-phase status, not just the overall outcome —"
+            echo "so a run with green Phase 1/2/3 and a red Phase 4 is visibly"
+            echo "three-green-and-one-red without clicking into the campaign page."
+            echo
+            echo "| Campaign | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Outcome | Completed | ai-memory ref | Evidence |"
+            echo "|---|---|---|---|---|---|---|---|---|"
           } > docs/runs/index.md
           # List newest first — rely on lexicographic sort since
           # campaign ids are monotonic v0.6.0.0-final-rN.
@@ -95,13 +99,35 @@ jobs:
               v=$(jq -r 'if type == "object" and (.pass == true) then "PASS" else "FAIL" end' "$file" 2>/dev/null)
               echo "${v:-FAIL}"
             }
+            # Per-phase derivation — runs table shows each phase status
+            # so readers see at a glance that r15+ runs are 3-of-4-green
+            # (Phase 1/2/3 PASS, Phase 4 FAIL), not uniformly red.
+            per_phase() {
+              local phase="$1"
+              if [ "$phase" = "1" ]; then
+                local any=false all=true
+                for n in "$dir"phase1-node-*.json; do
+                  [ -e "$n" ] || continue
+                  any=true
+                  [ "$(pass_of "$n")" = "PASS" ] || all=false
+                done
+                if [ "$any" = "false" ]; then echo "—"; return; fi
+                [ "$all" = "true" ] && echo "✅" || echo "❌"
+                return
+              fi
+              local file="$dir/phase${phase}.json"
+              [ -f "$file" ] || { echo "—"; return; }
+              [ "$(pass_of "$file")" = "PASS" ] && echo "✅" || echo "❌"
+            }
+            p1=$(per_phase 1); p2=$(per_phase 2); p3=$(per_phase 3); p4=$(per_phase 4)
+
             summary_pass=$(jq -r '.overall_pass // false' "$summary")
+            outcome="PASS"
             [ "$summary_pass" = "true" ] || outcome="FAIL"
             for p in phase2.json phase3.json phase4.json; do
               [ "$(pass_of "$dir$p")" = "PASS" ] || { outcome="FAIL"; break; }
             done
-            p1_ok=true
-            has_p1=false
+            p1_ok=true; has_p1=false
             for n in "$dir"phase1-node-*.json; do
               [ -e "$n" ] || continue
               has_p1=true
@@ -109,7 +135,7 @@ jobs:
             done
             [ "$has_p1" = "true" ] && [ "$p1_ok" = "true" ] || outcome="FAIL"
             evidence="[offline HTML](../evidence/${name}/index.html)"
-            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${outcome} | ${evidence} |" >> docs/runs/index.md
+            echo "| [${name}](./${name}.md) | ${p1} | ${p2} | ${p3} | ${p4} | ${outcome} | ${completed} | ${ref} | ${evidence} |" >> docs/runs/index.md
 
             out="docs/runs/${name}.md"
             {
