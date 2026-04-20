@@ -97,17 +97,24 @@ for AGENT in "${AGENTS[@]}"; do
 done
 wait
 
-OK=$(grep -c '^201$' "$CODES_FILE" || echo 0)
-QNM=$(grep -c '^503$' "$CODES_FILE" || echo 0)
-FAIL=$(($(wc -l < "$CODES_FILE") - OK - QNM))
-log "burst totals: OK=$OK  QNM=$QNM  FAIL=$FAIL (total=$(wc -l < "$CODES_FILE"))"
+# `grep -c` returns exit 1 with "0" on stdout when no match; use
+# `awk` so we always get a clean count regardless of match presence.
+OK=$(awk '/^201$/{n++} END{print n+0}' "$CODES_FILE")
+QNM=$(awk '/^503$/{n++} END{print n+0}' "$CODES_FILE")
+TOTAL=$(wc -l < "$CODES_FILE")
+FAIL=$((TOTAL - OK - QNM))
+log "burst totals: OK=$OK  QNM=$QNM  FAIL=$FAIL (total=$TOTAL)"
 log "code distribution:"
-sort "$CODES_FILE" | uniq -c | while read count code; do
-  log "  $code: $count"
+sort "$CODES_FILE" | uniq -c | while read -r cnt code; do
+  log "  $code: $cnt"
 done
-log "sample response body (first write):"
-head -c 500 "$SAMPLE_FILE" | sed 's/^/  /' >&2
-echo >&2
+if [ -s "$SAMPLE_FILE" ]; then
+  log "sample response body (first write):"
+  head -c 500 "$SAMPLE_FILE" | sed 's/^/  /' >&2
+  echo >&2
+else
+  log "sample response body: (empty — no response captured)"
+fi
 
 # ---- Settle period ---------------------------------------------
 # 30s is three sync-daemon cycles at default 10s cadence — enough
