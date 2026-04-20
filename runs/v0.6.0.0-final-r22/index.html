@@ -84,9 +84,50 @@
         <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="run-focus">
+        <p class="label">Run focus</p>
+        <h2>Phase 4 script crashed on my own cycles_by_fault capture</h2>
+        <p><strong>What this campaign set out to test:</strong> Full four-phase protocol after PR #316 (revert of aggressive reqwest settings) landed, with partition_minority opted out of the Phase 4 default (kill_primary_mid_write is the only required fault class now). Also carried my earlier f993e2c commit that adds a `cycles_by_fault` field to phase4.json — that commit is the one that broke r22.</p>
+        <p><strong>What it demonstrated:</strong> Proved Phases 1/2/3 are robust across another campaign on real infrastructure (five consecutive originals now: r15, r16, r17, r18, r22). Disproved that my f993e2c commit was tested — it clearly wasn't. Reverted in ship-gate commit a99bb3b before r23 dispatched.</p>
+        <p class="muted">Detailed tri-audience analysis is below, followed by per-phase test results for all four phases of the protocol — including any phase that did not run in this campaign.</p>
+      </section>
       <section class="ai-insight">
-        <h2>AI NHI analysis</h2>
-        <p class="muted">No per-campaign narrative recorded for this run. The workflow appends entries to <code>analysis/run-insights.json</code> as each campaign completes; older runs that predate the automation show this placeholder. Raw evidence below is unaffected.</p>
+        <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
+        <h2>Phase 4 script crashed on my own cycles_by_fault capture</h2>
+        <p class="verdict">Phases 1, 2, 3 all passed cleanly (originals — not reconstructed). Phase 4 exited non-zero with an empty phase4.json — the chaos campaign itself ran fine (5 min wall clock, normal for single-fault kill_primary), but the phase4_chaos.sh post-campaign jq pipeline that captures per-cycle data into the summary hit an input-shape error, `set -e` killed the script before the final summary could emit. Honest self-own.</p>
+        <h3>What this campaign tested</h3>
+        <p>Full four-phase protocol after PR #316 (revert of aggressive reqwest settings) landed, with partition_minority opted out of the Phase 4 default (kill_primary_mid_write is the only required fault class now). Also carried my earlier f993e2c commit that adds a `cycles_by_fault` field to phase4.json — that commit is the one that broke r22.</p>
+        <h3>What it proved (or disproved)</h3>
+        <p>Proved Phases 1/2/3 are robust across another campaign on real infrastructure (five consecutive originals now: r15, r16, r17, r18, r22). Disproved that my f993e2c commit was tested — it clearly wasn't. Reverted in ship-gate commit a99bb3b before r23 dispatched.</p>
+        <h3>For three audiences</h3>
+        <div class="audiences">
+          <article>
+            <h4>Non-technical end users</h4>
+            <p>A different test-infrastructure bug, caught by the same test infrastructure that's been catching every other bug this week. My mistake this time: I added new diagnostic code to the test harness without actually running it end-to-end. The new code errored on its first real-infra encounter. Reverted, re-dispatched. No customer-visible change; this one never got close to a release.</p>
+          </article>
+          <article>
+            <h4>C-level decision makers</h4>
+            <p>Test-harness regression, not product regression. The ship-gate continues to enforce the distinction cleanly — every time a false step lands, the next campaign catches it. Cost: one more run, another ~$0.15, another ~30 minutes of engineering time. The record still shows zero product-level regressions shipped.</p>
+          </article>
+          <article>
+            <h4>Engineers &amp; architects</h4>
+            <p>phase4_chaos.sh after commit f993e2c captured `jq -s '.' "$JSONL"` into a bash associative array `CYCLE_DATA`, then printf-concatenated entries through `jq -s 'add // {}'` to build a `cycles_by_fault` object for the final summary. Something in that pipeline errored under the chaos-client's jq version — perhaps the printf-of-multi-line-JSON not parsing as a single document, perhaps an `add`-on-non-array issue on a single fault class. `set -e` in phase4_chaos.sh propagated the failure; final summary never wrote. Reverted in a99bb3b; per-cycle capture to be re-introduced in a follow-up PR with a local smoke test before it ships.</p>
+          </article>
+        </div>
+        <h3>Bugs surfaced and where they were fixed</h3>
+        <ol class="bugs">
+          <li>
+            <p class="bug-title">phase4_chaos.sh cycles_by_fault pipeline errored → empty phase4.json</p>
+            <p class="bug-field"><strong>Impact:</strong> r22 couldn't emit a Phase 4 verdict JSON. Phases 1/2/3 evidence is intact and valid.</p>
+            <p class="bug-field"><strong>Root cause:</strong> Introduced in ship-gate commit f993e2c. Multi-line JSON piped through printf into jq slurp mode hit a parsing/type error under set -e. Not caught because the commit wasn't locally smoke-tested.</p>
+            <p class="bug-field"><strong>Fixed in:</strong></p>
+            <ul class="bug-fixes">
+              <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/a99bb3b" rel="noopener">ship-gate commit a99bb3b — revert capture</a></li>
+            </ul>
+          </li>
+        </ol>
+        <h3>What changed going into the next campaign</h3>
+        <p>r23 dispatched with every experimental addition removed: conservative reqwest client (PR #316), partition_minority opt-in (ship-gate commit ac7e87a), no cycles_by_fault capture (ship-gate a99bb3b). Target outcome: full 4/4 green → v0.6.0 tag.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 — functional (per-node) <span class="badge pass">PASS</span></h2>
@@ -399,8 +440,8 @@
         <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
         <h3>Test results</h3>
         <ul class="checklist">
-          <li class="fail"><span class="check">&#x2717;</span> phase4.json did not parse as JSON — the chaos-harness summary never wrote cleanly <span class="muted">— see raw JSON below</span></li>
-          <li class="fail"><span class="check">&#x2717;</span> Per-fault convergence_bound ≥ 0.995 <span class="muted">— metric unavailable</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Per-fault convergence_bound ≥ 0.995 <span class="muted">— no convergence_by_fault field in phase4.json</span></li>
+          <li class="fail"><span class="check">&#x2717;</span> Overall phase-4 pass flag</li>
         </ul>
         <h3>Raw evidence</h3>
         <details>
