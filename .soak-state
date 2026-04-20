@@ -1,0 +1,6 @@
+{
+  "release_tag": "v0.6.0",
+  "started_at": "2026-04-20T20:29:03Z",
+  "window_runs": 84,
+  "cadence_cron": "13 */4 * * *"
+}
