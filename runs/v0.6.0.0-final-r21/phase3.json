@@ -1,0 +1,36 @@
+{
+  "phase": 3,
+  "pass": true,
+  "report_forward": {
+    "batches": 1,
+    "dry_run": false,
+    "errors": [],
+    "from_url": "sqlite:///tmp/phase3-source.db",
+    "memories_read": 1000,
+    "memories_written": 1000,
+    "to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+  },
+  "report_idempotent": {
+    "batches": 1,
+    "dry_run": false,
+    "errors": [],
+    "from_url": "sqlite:///tmp/phase3-source.db",
+    "memories_read": 1000,
+    "memories_written": 1000,
+    "to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+  },
+  "report_reverse": {
+    "batches": 1,
+    "dry_run": false,
+    "errors": [],
+    "from_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test",
+    "memories_read": 1000,
+    "memories_written": 1000,
+    "to_url": "sqlite:///tmp/phase3-roundtrip.db"
+  },
+  "src_count": 1000,
+  "dst_count": 1000,
+  "reasons": [
+    ""
+  ]
+}
