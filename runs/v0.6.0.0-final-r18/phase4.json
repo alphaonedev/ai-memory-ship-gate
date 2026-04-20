@@ -1,0 +1,79 @@
+[chaos] chaos campaign: fault=kill_primary_mid_write cycles=50 writes/cycle=100
+[chaos] workdir: /tmp/phase4-kill_primary_mid_write
+[chaos] binary: /usr/local/bin/ai-memory
+[chaos] cycle 1: nodes ready (pids 4420 4422 4424)
+[chaos] cycle 2: nodes ready (pids 4792 4794 4796)
+[chaos] cycle 3: nodes ready (pids 5134 5136 5138)
+[chaos] cycle 4: nodes ready (pids 5476 5478 5480)
+[chaos] cycle 5: nodes ready (pids 5818 5820 5822)
+[chaos] cycle 6: nodes ready (pids 6161 6163 6165)
+[chaos] cycle 7: nodes ready (pids 6503 6505 6507)
+[chaos] cycle 8: nodes ready (pids 6845 6847 6849)
+[chaos] cycle 9: nodes ready (pids 7187 7189 7191)
+[chaos] cycle 10: nodes ready (pids 7529 7531 7533)
+[chaos] cycle 11: nodes ready (pids 7871 7873 7875)
+[chaos] cycle 12: nodes ready (pids 8211 8213 8215)
+[chaos] cycle 13: nodes ready (pids 8553 8555 8557)
+[chaos] cycle 14: nodes ready (pids 8895 8897 8899)
+[chaos] cycle 15: nodes ready (pids 9237 9239 9241)
+[chaos] cycle 16: nodes ready (pids 9579 9581 9583)
+[chaos] cycle 17: nodes ready (pids 9921 9923 9925)
+[chaos] cycle 18: nodes ready (pids 10263 10265 10267)
+[chaos] cycle 19: nodes ready (pids 10605 10607 10609)
+[chaos] cycle 20: nodes ready (pids 10947 10949 10951)
+[chaos] cycle 21: nodes ready (pids 11289 11291 11293)
+[chaos] cycle 22: nodes ready (pids 11631 11633 11635)
+[chaos] cycle 23: nodes ready (pids 11973 11975 11977)
+[chaos] cycle 24: nodes ready (pids 12315 12317 12319)
+[chaos] cycle 25: nodes ready (pids 12657 12659 12661)
+[chaos] cycle 26: nodes ready (pids 13002 13004 13006)
+[chaos] cycle 27: nodes ready (pids 13349 13351 13353)
+[chaos] cycle 28: nodes ready (pids 13693 13695 13697)
+[chaos] cycle 29: nodes ready (pids 14037 14039 14041)
+[chaos] cycle 30: nodes ready (pids 14381 14383 14385)
+[chaos] cycle 31: nodes ready (pids 14725 14727 14729)
+[chaos] cycle 32: nodes ready (pids 15069 15071 15073)
+[chaos] cycle 33: nodes ready (pids 15413 15415 15417)
+[chaos] cycle 34: nodes ready (pids 15757 15759 15761)
+[chaos] cycle 35: nodes ready (pids 16101 16103 16105)
+[chaos] cycle 36: nodes ready (pids 16445 16447 16449)
+[chaos] cycle 37: nodes ready (pids 16789 16791 16793)
+[chaos] cycle 38: nodes ready (pids 17135 17137 17139)
+[chaos] cycle 39: nodes ready (pids 17481 17483 17485)
+[chaos] cycle 40: nodes ready (pids 17827 17829 17831)
+[chaos] cycle 41: nodes ready (pids 18173 18175 18177)
+[chaos] cycle 42: nodes ready (pids 18519 18521 18523)
+[chaos] cycle 43: nodes ready (pids 18865 18867 18869)
+[chaos] cycle 44: nodes ready (pids 19211 19213 19215)
+[chaos] cycle 45: nodes ready (pids 19557 19559 19561)
+[chaos] cycle 46: nodes ready (pids 19903 19905 19907)
+[chaos] cycle 47: nodes ready (pids 20249 20251 20253)
+[chaos] cycle 48: nodes ready (pids 20595 20597 20599)
+[chaos] cycle 49: nodes ready (pids 20941 20943 20945)
+[chaos] cycle 50: nodes ready (pids 21289 21291 21293)
+[chaos] ---- summary ----
+{
+  "total_cycles": 50,
+  "total_writes": 5000,
+  "total_ok": 150,
+  "total_quorum_not_met": 0,
+  "total_fail": 4850,
+  "convergence_bound": 0.03
+}
+[chaos] per-cycle JSONL: /tmp/phase4-kill_primary_mid_write/chaos-report.jsonl
+[chaos] chaos campaign: fault=partition_minority cycles=50 writes/cycle=100
+[chaos] workdir: /tmp/phase4-partition_minority
+[chaos] binary: /usr/local/bin/ai-memory
+[chaos] cycle 1: nodes ready (pids 21643 21645 21647)
+[chaos] cycle 2: nodes ready (pids 21995 21997 21999)
+[chaos] cycle 3: nodes ready (pids 22347 22349 22351)
+[chaos] cycle 4: nodes ready (pids 22705 22707 22709)
+[chaos] cycle 5: nodes ready (pids 23069 23071 23073)
+[chaos] cycle 6: nodes ready (pids 23439 23441 23443)
+[chaos] cycle 7: nodes ready (pids 23815 23817 23819)
+[chaos] cycle 8: nodes ready (pids 24197 24199 24201)
+[chaos] cycle 9: nodes ready (pids 24587 24589 24591)
+[chaos] cycle 10: nodes ready (pids 24984 24986 24988)
+[chaos] cycle 11: nodes ready (pids 25386 25388 25390)
+[chaos] cycle 12: nodes ready (pids 25796 25798 25800)
+[chaos] FATAL: node-0 failed to start (see /tmp/phase4-partition_minority/node-0.log)
