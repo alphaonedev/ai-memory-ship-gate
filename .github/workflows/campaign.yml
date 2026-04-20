@@ -168,6 +168,30 @@ jobs:
               DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 curl jq sqlite3 iptables ufw docker.io docker-compose-v2
               mkdir -p /etc/ai-memory /opt/ai-memory-mcp
+
+              # OS-tier firewall explicitly DISABLED.
+              #
+              # The DigitalOcean Cloud Firewall is the single
+              # enforcement boundary. Droplet-local UFW/iptables
+              # policies are intentionally OFF so that:
+              #   (a) the chaos harness can freely inject/withdraw
+              #       its own iptables rules on the loopback OUTPUT
+              #       chain without fighting a competing policy
+              #   (b) on Ubuntu 24.04 where UFW can be active out of
+              #       the box, we don'"'"'t have a second firewall
+              #       silently blocking VPC traffic or loopback
+              #       federation calls
+              #   (c) a single point of firewall truth (DO Cloud
+              #       Firewall) means operators don'"'"'t need to
+              #       reason about policy composition
+              #
+              # If UFW is present, disable it. No-op otherwise.
+              if command -v ufw >/dev/null 2>&1; then
+                ufw --force disable || true
+                ufw status verbose || true
+              fi
+
+              mkdir -p /etc/ai-memory /opt/ai-memory-mcp
               # Dead-man switch: hard ceiling on droplet uptime.
               MINS=$((8 * 60))
               shutdown -P "+$MINS" "ai-memory ship-gate dead-man switch" &

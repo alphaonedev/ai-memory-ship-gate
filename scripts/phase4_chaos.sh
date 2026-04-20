@@ -50,18 +50,32 @@ for FAULT in $FAULTS; do
   REPORT_DIR="/tmp/phase4-$FAULT"
   rm -rf "$REPORT_DIR"; mkdir -p "$REPORT_DIR"
 
-  # Route verbose chaos output to a log file only (not stdout) — the
-  # tee'd stdout used to pollute phase4.json with 100s of "[chaos]
-  # cycle N: nodes ready" lines. Reviewers read the per-cycle JSONL
-  # from the structured summary instead.
+  # Run the chaos harness with a hard wall-clock bound so a hang
+  # can't burn the 90-min job budget silently. Verbose output also
+  # mirrored to stderr (workflow log) so per-cycle progress is
+  # visible live — previous runs hid the chaos output entirely in
+  # campaign.log and we couldn't see where a hang was happening.
+  # `set +e` briefly so `timeout`'s 124 exit doesn't kill the outer
+  # script; we detect the timeout explicitly below.
+  set +e
   WORKDIR="$REPORT_DIR" \
   AI_MEMORY_BIN="/usr/local/bin/ai-memory" \
-    bash packaging/chaos/run-chaos.sh \
-      --cycles "$CYCLES" \
-      --writes "$WRITES" \
-      --fault "$FAULT" \
-      --verbose \
-      > "$REPORT_DIR/campaign.log" 2>&1
+    timeout --foreground 600s \
+      bash packaging/chaos/run-chaos.sh \
+        --cycles "$CYCLES" \
+        --writes "$WRITES" \
+        --fault "$FAULT" \
+        --verbose \
+      2>&1 | tee "$REPORT_DIR/campaign.log" >&2
+  RC=${PIPESTATUS[0]}
+  set -e
+  if [ "$RC" -eq 124 ]; then
+    log "$FAULT: run-chaos.sh hit 600s timeout — aborting this fault class"
+    REASONS+=("$FAULT: timed out at 600s")
+    continue
+  elif [ "$RC" -ne 0 ]; then
+    log "$FAULT: run-chaos.sh exited $RC"
+  fi
 
   # Extract convergence bound from the per-cycle JSONL.
   #
