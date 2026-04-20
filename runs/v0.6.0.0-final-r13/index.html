@@ -76,36 +76,37 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Federation convergence miss + probe SSH 255 killed script</h2>
-        <p class="verdict">First real product signal. Writes 200/200 OK, but peers lagged (B=89.5%, C=73%) and the probe step aborted.</p>
+        <h2>Federation convergence miss (B=89.5%, C=73%) + probe SSH 255 killed script</h2>
+        <p class="verdict">First run where writes actually exercised federation. And federation was visibly wrong: non-leader peers sat well below the 95% convergence threshold even after 30 seconds of settle. Separately, the probe step exposed a harness-fragility sub-bug.</p>
         <h3>What this campaign tested</h3>
-        <p>4×50-write burst, 30s settle, then convergence assertion + two quorum probes (one-peer-down → 201, both-peers-down → 503).</p>
+        <p>4×50-write burst, 30-second settle, convergence assertion, two quorum probes (one-peer-down → 201, both-peers-down → 503).</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Disproved (for this configuration) that 30s of settle reliably produces ≥95% convergence on a fresh 3-node cluster. The probe step also exposed a harness fragility — SSH exit 255 from a `kill -9` aborted the rest of Phase 2.</p>
+        <p>Disproved that a 30s settle was sufficient for 200 burst writes to reach all three peers under the then-current federation implementation. On node-A (leader) every write landed. On node-B, 179 of 200. On node-C, 146 of 200. This is not an eventual-consistency "slow catch-up" pattern — it's a deterministic "each write is dropped on one peer" pattern. (Run 14 would later confirm this.) Also disproved that a shell-level `|| true` inside quoted remote ssh commands is enough to survive transport-level 255 exits.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>The servers accepted the messages this time, but the back-of-house syncing wasn't caught up before we measured. Plus the cleanup step tripped over itself. Both were test infrastructure issues, not product bugs — the product was doing its job.</p>
+            <p>Two problems at once: the back-of-house syncing wasn't caught up before we measured (could be explained by the test window being too short, or by something worse), and a cleanup step tripped over itself killing the test before it could report. Both turn out to be fixable. The second one is a test-rig issue; the first turns out to be a real bug in the product, uncovered fully in the NEXT run.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>The campaign surfaced two harness robustness gaps. Correctly sized test windows and transport-level fault tolerance in our own tools. Distinct from the product-correctness finding that lands in r14.</p>
+            <p>The campaign now has instrumented visibility into federation correctness. Two gaps identified: (a) test window may be too tight OR product convergence path is slower than expected (to be distinguished by r14), (b) probe harness needs transport-level fault tolerance. Neither is a product regression by itself yet — but the campaign is now exposing signal rather than hiding it. This is what a release-gate is supposed to do.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>Quorum (W=2/N=3) guarantees leader + 1 peer synchronous ack; the third peer catches up via async path. 30s wasn't enough. Separately, `ssh root@X "pkill -f X || true"` returns SSH exit 255 if the SSH transport closes after the remote pkill finishes — `|| true` inside the remote quotes doesn't cover transport-level failures.</p>
+            <p>Quorum write (W=2/N=3) guarantees leader + one peer synchronously. Third peer catches up via sync-daemon. 30s was THREE sync-daemon cycles at the then-default 10s cadence. Observed pattern: B=89.5%, C=73% with a convergence ratio that doesn't match a simple settle-time explanation (if it were purely time, we'd expect B and C to be roughly equal, both lagging). Separately, `ssh root@X "pkill -f 'ai-memory serve' || true"` returns SSH exit 255 when the remote sshd closes after pkill kills a process in the same session. `|| true` inside quotes shields the remote exit code; the SSH client's own 255 propagates under `set -e`. Shield fix: wrap the SSH call itself, plus ConnectTimeout + ServerAliveInterval for good measure.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
-            <p class="bug-title">Phase 2 30s settle insufficient for 200-write convergence</p>
-            <p class="bug-field"><strong>Impact:</strong> Node-B at 89.5%, node-C at 73% — below 95% pass threshold.</p>
-            <p class="bug-field"><strong>Root cause:</strong> Only one peer gets synchronous replication at quorum time; the other has to catch up. 30s underestimated that path.</p>
+            <p class="bug-title">Phase 2 30s settle insufficient for 200-write convergence (symptom — not root cause)</p>
+            <p class="bug-field"><strong>Impact:</strong> node-B at 89.5%, node-C at 73% — below 95% pass threshold. Initial diagnosis was "settle too short"; real cause emerged in r14.</p>
+            <p class="bug-field"><strong>Root cause:</strong> Quorum's synchronous replication only covers W-1 peers; the third relies on an async path. At the time we believed the async path was slow. It was actually broken.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/1a7de54" rel="noopener">ship-gate commit 1a7de54 (90s settle)</a></li>
+              <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/309" rel="noopener">PR #309 (real root-cause fix)</a></li>
             </ul>
           </li>
           <li>
@@ -114,12 +115,12 @@
             <p class="bug-field"><strong>Root cause:</strong> `|| true` inside remote quotes only shields the remote command's exit code, not SSH transport failures.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
-              <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/1a7de54" rel="noopener">ship-gate commit 1a7de54 (outer || true + ConnectTimeout/ServerAliveInterval)</a></li>
+              <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/1a7de54" rel="noopener">ship-gate commit 1a7de54</a></li>
             </ul>
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>r14 bumps settle to 90s and wraps probe SSH in outer `|| true`. Next run reveals the real product bug underneath — federation fanout abort.</p>
+        <p>r14 bumps the settle to 90s AND wraps probe SSH in outer `|| true`. Convergence stayed below threshold — revealing that the real problem wasn't the test window, it was the product.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

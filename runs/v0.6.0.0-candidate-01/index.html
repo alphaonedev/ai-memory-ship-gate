@@ -76,29 +76,29 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Early RC — scaffolding validation</h2>
-        <p class="verdict">Infrastructure-shakeout run. Predates the detailed session log.</p>
+        <h2>Early RC — infrastructure scaffolding validation</h2>
+        <p class="verdict">Infrastructure-shakeout run. Predates the detailed session log and the runner-driven SSH refactor. Informational value only; not a release signal.</p>
         <h3>What this campaign tested</h3>
-        <p>First exercise of the four-phase protocol on fresh DigitalOcean droplets against the v0.6.0 candidate branch.</p>
+        <p>First end-to-end exercise of the four-phase protocol on fresh DigitalOcean droplets against the v0.6.0 candidate branch, using the original per-droplet Terraform-and-cloud-init methodology (before commit f81bd76's runner-driven refactor).</p>
         <h3>What it proved (or disproved)</h3>
-        <p>The Terraform module provisions, SSH keys propagate, cargo builds the release binary, and droplets clone the ai-memory-mcp tree. Campaign orchestration skeleton works.</p>
+        <p>The Terraform module successfully provisioned droplets, SSH keys propagated via DigitalOcean's metadata service, cloud-init ran cargo to build ai-memory from source, and the per-phase shell scripts could execute in sequence. It disproved NOTHING about the product — no phase 2/3/4 assertions produced trustworthy data yet.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>This is a very early run — think of it as a dress rehearsal before the real shows. It tells us the stage is built, the lights come on, and the cast can find their places. Whether the play itself is any good is measured by later runs.</p>
+            <p>Imagine a dress rehearsal before opening night. The stage got built, the lights came on, the cast found their marks, the curtain rose on schedule. Whether the play itself is any good is measured by later runs, with a different set of stage directions and critics in the audience.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>Infrastructure readiness confirmed. The same Terraform + GitHub Actions + DigitalOcean pipeline that will gate every release candidate is functional. No product-level conclusions should be drawn from this run.</p>
+            <p>This run establishes that we can provision and orchestrate the ship-gate test infrastructure end-to-end. It does NOT establish that any specific customer-facing behaviour of ai-memory is correct. Treat the PASS marker (if any) as a scaffolding receipt, not a release attestation. The 6× cost+latency reduction we published on later runs compares favourably only because this candidate-era run proves the higher baseline was real.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>Candidate-stage artifacts reflect the pre-runner-driven methodology. Compare to post-f81bd76 runs (v0.6.0.0-final onwards) for apples-to-apples cost/time figures.</p>
+            <p>Compare artifacts against post-f81bd76 runs for cost/time deltas (per-droplet boot ~15 min vs runner-driven ~2 min binary build). The candidate-era methodology is archived in git history; no campaigns on release/v0.6.0 have used it since r10.</p>
           </article>
         </div>
         <h3>What changed going into the next campaign</h3>
-        <p>Moved to the runner-driven SSH methodology (commit f81bd76 in ship-gate), cutting a 60-minute per-droplet budget to 13-15 minutes and campaign cost from ~$0.65 to ~$0.10.</p>
+        <p>Commit f81bd76 moved orchestration onto the GitHub Actions runner. Droplets become pure workload targets. 60-minute per-droplet budget collapses to 13-15 minutes wall-clock; cost from ~$0.65 to ~$0.10 per run.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

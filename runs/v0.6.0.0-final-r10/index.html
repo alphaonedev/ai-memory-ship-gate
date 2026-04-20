@@ -76,29 +76,29 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>First run after runner-driven SSH refactor</h2>
-        <p class="verdict">Baseline for the faster, cheaper methodology.</p>
+        <h2>Baseline under the runner-driven SSH methodology</h2>
+        <p class="verdict">First run exercising the faster, cheaper orchestration pattern that every campaign since has used. Methodology proven; still no product-level green yet.</p>
         <h3>What this campaign tested</h3>
-        <p>Same four phases, now orchestrated from a single GitHub Actions runner over SSH — droplets hold workload only.</p>
+        <p>The same four phases, reorchestrated: GitHub Actions runner holds the SCP+SSH control plane, droplets hold only workload. Campaign dispatch → Terraform provision → binary-build-on-runner → push-binary-to-droplets → run phases remotely → destroy.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Runner-driven methodology completes a campaign in roughly 10 minutes at &lt;$0.15 DO spend. The cost/time claims now published on the dashboard are measurable, not aspirational.</p>
+        <p>Runner-driven orchestration completes in roughly 10 minutes at under $0.15 of DigitalOcean compute per clean run. The cost/time figures now published on the dashboard (~$0.10 / ~15 min) are measurable facts, not aspirational targets. The earlier per-droplet cloud-init methodology cost 6× more.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>The tests got faster and cheaper — from roughly an hour to about fifteen minutes, and from about sixty cents a run to about ten cents. Nothing about what the tests check changed; only how they run.</p>
+            <p>The test pipeline got roughly six times faster and six times cheaper — from about an hour per run at ~60¢ to about fifteen minutes at ~10¢. Nothing about WHICH tests we run changed; only the orchestration around them. Faster tests mean faster releases, more releases, more frequent fixes reaching you.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>Release-gate latency drops 6× and spend drops 6× from the candidate-era methodology. Velocity gain with no loss of signal.</p>
+            <p>Release-gate latency and spend both drop ~6×. At 100 release candidates per year that's ~$50 of direct compute savings AND a shift from multi-hour decision windows to minutes. The real ROI is not the compute line item — it's that a 15-minute release signal invites developers to treat it as a pre-commit check rather than a ceremonial quarterly review.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>commit f81bd76 moved orchestration onto the runner. Droplets still execute — SIGKILL / iptables still need local root — but the runner holds SCP/SSH so per-droplet boot costs vanish.</p>
+            <p>Commit f81bd76 moved SCP/SSH to the runner. Droplets still need local root for SIGKILL / iptables in Phase 4, but per-droplet cargo builds are gone. The Rust toolchain cache (Swatinem/rust-cache@v2) dominates the runner's minute count; binary build drops to ~2 min on cache hit, ~7 min cold.</p>
           </article>
         </div>
         <h3>What changed going into the next campaign</h3>
-        <p>Runs 11-14 iterate on the Phase 2 harness and uncover the federation post-quorum abort bug that was masking a correctness regression.</p>
+        <p>Runs 11 through 14 iterate on Phase 2's multi-agent burst test, ultimately uncovering the silent-data-loss federation fanout bug at the product layer.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

@@ -76,33 +76,33 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Port collision resolved, `source="chaos"` now the bottleneck</h2>
-        <p class="verdict">Chaos writes reached the server, all rejected with 400 because `"chaos"` wasn't in VALID_SOURCES.</p>
+        <h2>Port collision resolved; source="chaos" now rejected by validation allowlist</h2>
+        <p class="verdict">Chaos writes now reach the server but all return 400 because `"chaos"` isn't in VALID_SOURCES. Same class of bug as Phase 2 at r12, different location.</p>
         <h3>What this campaign tested</h3>
-        <p>Phase 4 with three local chaos processes on distinct ports + 50 cycles × 2 default fault classes.</p>
+        <p>Phase 4 with three local chaos processes on distinct ports, all sharing the chaos-client droplet as designed. 50 cycles × 2 fault classes.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>The port/bind issue is gone; the next gate is the product-side validation allowlist. Writes reach the handler and are rejected there.</p>
+        <p>Proved the harness infrastructure (processes, ports, iptables, signals) is structurally sound — writes reach the handler. Disproved that `source="chaos"` is an acceptable caller label for production ai-memory instances with default validation. Reached the same validation boundary that blocked Phase 2 three campaigns earlier.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>We got past one test-rig problem; the next problem was the same label-checking rule that tripped Phase 2 earlier, applied to a different label. Same class of fix.</p>
+            <p>Two test-rig labelling problems of the same shape, in two different phases, three weeks apart. The first time we adapted the test (used a different label). This time we decided the label was legitimate and belonged in the product's allowlist — chaos-originated writes are a real thing, distinct from API traffic, and ai-memory operators should be able to filter by them in logs. Product change, small, principled.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>A recurring theme: the server's input validation is strict enough that our own testing harness has to conform to it. That's exactly the posture we want for production traffic — test data is treated with the same skepticism as real data.</p>
+            <p>The product's input-validation allowlist has now caught TWO test-harness label mismatches in a single campaign series. That's not a defect; it's the system working. We extended the allowlist for chaos specifically because chaos traffic is a legitimate caller class worth distinguishing in production audit logs (you want to know which writes came from fault-injection tests vs real usage). This is the kind of decision that gets documented once and then stays documented — PR #310 pinned it in validate.rs + MCP schema + TS SDK in lockstep to prevent drift.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>`run-chaos.sh` POSTs with `source="chaos"`. Same VALID_SOURCES rejection pattern as r11 (source="ship-gate"). Right fix this time is to add `"chaos"` to the allowlist — unlike a test harness, `chaos` is a legitimate caller class worth distinguishing in production logs.</p>
+            <p>Same validate_source rejection as r12 (source="ship-gate") but different correct fix. `"ship-gate"` is a test-harness marker and was pragmatically replaced by `"api"` in the harness. `"chaos"` is a legitimate caller class — operational audits benefit from distinguishing chaos-campaign writes from real API traffic in mixed-source databases. Fix: add `"chaos"` to `VALID_SOURCES` in `src/validate.rs` + the `enum` in `src/mcp.rs` tool schema + the `Source` union in `sdk/typescript/src/types.ts` (three-file triple-sync invariant; breaking any one creates runtime-vs-compile-time drift). PR #310 merged.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
             <p class="bug-title">source="chaos" rejected by validate_source (all 5000 writes → 400)</p>
-            <p class="bug-field"><strong>Impact:</strong> Phase 4 convergence_bound stuck at 0; total_ok 0 / total_fail 5000.</p>
-            <p class="bug-field"><strong>Root cause:</strong> `src/validate.rs::VALID_SOURCES` didn't include `"chaos"`. Harness payload was otherwise correct.</p>
+            <p class="bug-field"><strong>Impact:</strong> Phase 4 convergence_bound stuck at 0; total_ok 0 / total_fail 5000. No product behaviour exercised.</p>
+            <p class="bug-field"><strong>Root cause:</strong> `"chaos"` was not in VALID_SOURCES. validate_source returns 400 before federation fanout. Harness payload was otherwise well-formed.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/310" rel="noopener">PR #310 (MERGED)</a></li>
@@ -110,7 +110,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>PR #310 adds `"chaos"` to VALID_SOURCES + MCP tool schema enum + TS SDK Source union (three-file invariant). r17 should see writes reach 201.</p>
+        <p>PR #310 extends VALID_SOURCES + MCP schema + TS SDK in one commit. r17 should see chaos writes returning 201 pre-fault and exercising the fault-tolerance logic.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

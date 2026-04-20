@@ -76,33 +76,33 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Writes counted cleanly; all 200 returned 400 Bad Request</h2>
-        <p class="verdict">Counter bug resolved. Downstream bug immediately visible — source="ship-gate" was rejected at the validation boundary.</p>
+        <h2>Counts landed cleanly; all 200 writes returned HTTP 400</h2>
+        <p class="verdict">Harness counter fixed. Writes were reaching the server — and being rejected at the validation boundary because the harness was labelling itself with an unknown source tag. Still no federation signal; the requests never got past input validation.</p>
         <h3>What this campaign tested</h3>
-        <p>Same burst + quorum probes.</p>
+        <p>Same burst + quorum probes, now with a counter tally that actually counts.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Every attempted write was rejected by the server at validate time, not by federation. The counter fix worked — we could finally see *why* writes failed.</p>
+        <p>The product's input validation boundary is doing its job: `source` is an allowlisted field and unexpected values are rejected with 400 before reaching the federation layer. The harness was claiming to be `source="ship-gate"`, which isn't in VALID_SOURCES. This proved the allowlist works as designed — and that the test harness had to conform to it, same as any production caller.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>We thought we were testing whether the servers could talk to each other. The servers never even accepted the messages in the first place, because the test was labelling them incorrectly. Fixing the label made the servers accept — but revealed more to fix beyond that.</p>
+            <p>We fixed the broken thermometer, tried to take the patient's temperature again, and discovered the patient was refusing to open their mouth because we hadn't shown our visitor badge. Once we showed a valid badge, they complied. Not a bug in the patient; a bug in how we approached them. Reassuringly, it meant random unauthorized visitors with fake badges also get turned away.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>A test-harness labelling choice collided with a server-side allowlist. Classic defense-in-depth: the server rejected unexpected input, the test had to conform. Confirms the validation boundary is enforced.</p>
+            <p>A recurring theme across this campaign: the product's input validation is strict enough that our own test harness has to play by its rules. That's the posture we want for production — test data treated with the same skepticism as real data. Cost of discovery: zero customer impact. Confidence in input-validation defense-in-depth: confirmed.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>`ai-memory-mcp/src/validate.rs::VALID_SOURCES` only allows {user, claude, hook, api, cli, import, consolidation, system}. Phase 2 harness used `source="ship-gate"`; every POST returned 400. Could fix either side; quickest path was to use `source="api"` in the harness.</p>
+            <p>`ai-memory-mcp/src/validate.rs::VALID_SOURCES` allows `{user, claude, hook, api, cli, import, consolidation, system}`. The harness used `source="ship-gate"` which validate_source rejected at the handler boundary. Every POST returned 400 Bad Request before federation fanout was invoked. Fixed by using `source="api"` in the harness (ship-gate commit 55e6b3a). Four runs later, the same class of bug appeared again for `source="chaos"` in the Phase 4 harness and was fixed by extending the allowlist instead (PR #310 to ai-memory-mcp).</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
             <p class="bug-title">Harness used source="ship-gate" which is not in VALID_SOURCES</p>
-            <p class="bug-field"><strong>Impact:</strong> 100% of Phase 2 writes rejected with HTTP 400; federation never exercised.</p>
-            <p class="bug-field"><strong>Root cause:</strong> Validation allowlist is authoritative; harness didn't conform.</p>
+            <p class="bug-field"><strong>Impact:</strong> 100% of Phase 2 writes rejected with HTTP 400; federation layer never exercised. No product data-path reached.</p>
+            <p class="bug-field"><strong>Root cause:</strong> Validation allowlist is authoritative at the handler boundary; harness didn't conform.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/55e6b3a" rel="noopener">ship-gate commit 55e6b3a</a></li>
@@ -110,7 +110,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>r13 uses `source="api"` for burst + probes. Phase 2 can finally reach the federation assertion.</p>
+        <p>r13 uses `source="api"` for burst + probes. Phase 2 finally reaches the federation assertion — and immediately surfaces the product-level convergence miss.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

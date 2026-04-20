@@ -76,33 +76,33 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Phase 2 crashed at line 102 arithmetic — first diagnostic finding</h2>
-        <p class="verdict">Harness bug in the counter tally. Phase 2 never reached the federation assertion.</p>
+        <h2>Phase 2 crashed at line 102 — first diagnostic finding surfaces a harness bug</h2>
+        <p class="verdict">The Phase 2 shell harness died on an arithmetic syntax error before it ever reached the federation assertion. Harness-only failure; no product signal yet.</p>
         <h3>What this campaign tested</h3>
-        <p>4 agents × 50 writes × 3-node federation, then count rows per peer.</p>
+        <p>Four agent identities (`ai:agent-alice`, `-bob`, `-charlie`, `-dana`) each issuing 50 concurrent POSTs to node-a's `/api/v1/memories` endpoint under `--quorum-writes 2 --quorum-peers &lt;other two&gt;`, then tallying per-agent status codes.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>The burst completed (writes returned some status), but the shell was too brittle to tally them.</p>
+        <p>The write burst HAPPENED — the code tried to tally responses, meaning traffic reached the server. But the tally itself crashed. What the server actually did with those 200 writes was invisible to the test this run. The run neither proved nor disproved anything about federation.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>Before we could even measure if the cluster was healthy, the measuring device itself broke. Like a thermometer that won't turn on — before we can ask 'is the patient OK?' we have to fix the instrument.</p>
+            <p>We tried to measure the cluster's health, and the measuring device itself malfunctioned. Like a thermometer with a broken display — the patient may or may not have a fever, but we can't tell yet. The fix was to replace the broken thermometer, not to conclude anything about the patient.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>A test-infrastructure bug blocked the real product assertion. Distinct from a product bug, and materially less severe: no customer impact.</p>
+            <p>A test-infrastructure defect blocked the real product assertion. Materially different from a product bug: no customer impact, no release blocker beyond the cost of re-running the campaign. Notable for one reason though — the bug was subtle (a POSIX shell edge case where grep-with-zero-matches emits 0 on stdout AND exits non-zero) and survived review because the fault was latent until a genuinely-passing run hit the zero-match branch. A reminder that harness rigor matters as much as product rigor.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>`grep -c '^201$' file || echo 0` produces `"0\n0"` when grep finds zero matches (grep emits 0 AND exits 1, so `|| echo 0` appends another 0). The subsequent `$((TOTAL - OK - QNM))` arithmetic then tried to parse a multi-line string and died.</p>
+            <p>scripts/phase2_multiagent.sh line 102 computed `OK=$(grep -c '^201$' codes.txt || echo 0)`. When no line matched, `grep -c` emits `0\n` and exits 1; `|| echo 0` appends another `0`, producing a multi-line "0\n0" string. The subsequent `FAIL=$((TOTAL - OK - QNM))` arithmetic parsed that as invalid syntax. Fixed in commit 625ed66 by switching to `awk '/^201$/{n++} END{print n+0}'` which is idempotent for the empty-match case.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
             <p class="bug-title">grep -c + || echo 0 doubled stdout → arithmetic syntax error</p>
-            <p class="bug-field"><strong>Impact:</strong> Phase 2 harness died before producing a verdict.</p>
-            <p class="bug-field"><strong>Root cause:</strong> Pipeline double-counted when grep found zero matches. awk is robust to the empty case.</p>
+            <p class="bug-field"><strong>Impact:</strong> Phase 2 harness died before producing a verdict. Workflow reported FAIL, but the failure was test-infrastructure, not product.</p>
+            <p class="bug-field"><strong>Root cause:</strong> Pipeline double-counted when grep found zero matches. awk is robust to the empty case because it unconditionally emits `n+0` once at END.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-ship-gate/commit/625ed66" rel="noopener">ship-gate commit 625ed66</a></li>
@@ -110,7 +110,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>r12 uses `awk '/^201$/{n++} END{print n+0}'` instead of `grep -c || echo 0`. Clean zero-handling.</p>
+        <p>r12 adopts the awk-based tally. The first cycle that actually reaches the federation assertion will surface the NEXT layer of problems — and it does.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

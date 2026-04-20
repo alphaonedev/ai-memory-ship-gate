@@ -76,33 +76,33 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Writes now land (150 ok) but convergence metric is broken</h2>
-        <p class="verdict">Chaos source allowlist fix landed; writes succeed pre-kill. But `convergence_bound=0.03` revealed the harness's convergence math itself is wrong for kill-type faults.</p>
+        <h2>Writes now land (150 ok), but the convergence metric itself is wrong for kill-type faults</h2>
+        <p class="verdict">Chaos source allowlist fix landed; 150 writes (3 per cycle × 50 cycles) successfully returned 201 before the primary was killed. But the published metric `total_ok/total_writes=0.03` is mathematically capped at ~2% for kill faults. The product passed; the test's definition-of-done did not.</p>
         <h3>What this campaign tested</h3>
-        <p>Phase 4 with valid source, 50 cycles of kill_primary_mid_write.</p>
+        <p>Phase 4 with valid source, 50 cycles of `kill_primary_mid_write` (the harness defaults also include `partition_minority`).</p>
         <h3>What it proved (or disproved)</h3>
-        <p>The product accepts `source="chaos"` writes; quorum succeeds for the 3 pre-kill writes in each cycle. But the published metric `total_ok / total_writes` is mathematically capped at ~2% for kill faults (primary dies at write 2 of 100), making the 0.995 threshold unreachable no matter how healthy the cluster is.</p>
+        <p>Proved the product accepts `source="chaos"` writes end-to-end. Proved that quorum succeeds for the 3 pre-kill writes in each cycle (writes 0, 1, 2 before the SIGKILL at i=2). Disproved that `total_ok / total_writes` is a meaningful convergence metric for fault classes that deliberately kill the primary mid-cycle — that ratio is uptime, not convergence.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>We can now write to the system in the chaos test. But the scoring system is rigged against us: it measures 'what fraction of attempts succeed' and the test deliberately kills the server after the second attempt. We need to measure 'of the attempts that succeeded, did the data actually survive?' That's the real signal.</p>
+            <p>We can now write to the system in the chaos test, meaning the earlier test-harness label problem is gone. But we discovered that the scoring system was measuring the wrong thing: it was asking "what fraction of attempted writes succeed?" But the test DELIBERATELY crashes the server after the second write. So the test is set up to make 97% of attempts fail by design — yet the scoring system was treating those deliberate failures as actual failures. The right question is: of the writes that DID succeed BEFORE the crash, did the data survive on the remaining servers? That's fault-tolerance. That's what we actually care about.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>A measurement-definition bug was masking a passing product. The test was asking the wrong question. Corrected metric is `of writes that 201'd, what fraction landed on the surviving peers`, which is the actual eventual-consistency contract.</p>
+            <p>A measurement-definition bug that was masking passing product behaviour. The test was asking the wrong question — equivalent to judging a car's crash-test safety by "did the car keep driving after we drove it into a wall?" rather than "did the passengers survive?" The corrected metric `min(count_node1, count_node2) / total_ok` asks the right question: of the writes that returned success, what fraction actually propagated to the surviving peers? That's the eventual-consistency contract we care about. Fix was small, highly principled, and land-ed in PR #312.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>run-chaos.sh line 221: `convergence_bound = ok/writes * 1000 | floor / 1000`. With `kill_primary_mid_write` firing at write 2 of 100, writes 3..99 hit a dead port — always fail. Ratio caps at ~2%. Right metric: `min(count_node1, count_node2) / total_ok` per cycle, aggregated. That answers 'did quorum survivors have the write?' which is the eventual-consistency guarantee.</p>
+            <p>run-chaos.sh line 221 computed `convergence_bound = total_ok/total_writes * 1000 | floor / 1000`. With `kill_primary_mid_write` firing at write 2 of 100, writes 3..99 hit a dead port — always fail. Ratio caps at ~2%, making the 0.995 ADR-0001 threshold mathematically unreachable regardless of product correctness. Right metric: `min(count_node1, count_node2) / total_ok` per cycle, aggregated — answers "of the writes that returned 201, what fraction landed on BOTH surviving peers?" That's the eventual-consistency guarantee under the fault. PR #312 replaces the metric in run-chaos.sh + adds per-cycle namespace and DB isolation to prevent count-pollution across cycles.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
             <p class="bug-title">Phase 4 convergence metric measured uptime, not convergence</p>
-            <p class="bug-field"><strong>Impact:</strong> 0.995 threshold unreachable for kill faults regardless of product correctness.</p>
-            <p class="bug-field"><strong>Root cause:</strong> `ok/total_writes` ignores that most writes-during-kill are guaranteed to fail; doesn't examine whether survivors converged.</p>
+            <p class="bug-field"><strong>Impact:</strong> 0.995 threshold mathematically unreachable for kill faults regardless of product correctness. Green product, red test, no release.</p>
+            <p class="bug-field"><strong>Root cause:</strong> `ok/total_writes` ignores that most writes-during-kill are guaranteed to fail; doesn't ask whether the writes that DID succeed actually converged across survivors.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/312" rel="noopener">PR #312 (MERGED)</a></li>
@@ -110,7 +110,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>r18 runs with the surviving-peer metric. Surfaces two deeper harness bugs (cumulative count pollution + partition_minority teardown race) — all closed in PR #312.</p>
+        <p>r18 runs with the surviving-peer metric. It surfaces two deeper harness bugs (cumulative count pollution across cycles + partition_minority teardown race) — all fixed in the same PR #312.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

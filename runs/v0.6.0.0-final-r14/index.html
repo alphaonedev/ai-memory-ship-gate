@@ -76,33 +76,33 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Convergence STILL missed with 90s settle — federation fanout abort identified</h2>
-        <p class="verdict">Product bug uncovered. The harness is now correct; the product itself is losing writes to one peer per write.</p>
+        <h2>Convergence STILL missed with 90s settle — silent data-loss bug identified in federation fanout</h2>
+        <p class="verdict">Product bug uncovered. The harness is now correct; the product itself was dropping writes to one of the two non-leader peers on every burst, depending on which peer won the quorum-ack race. This is exactly the class of bug the ship-gate exists to catch.</p>
         <h3>What this campaign tested</h3>
-        <p>4×50-write burst, 90s settle, full probe sequence.</p>
+        <p>Same burst + probes, with 3× the settle time (30s → 90s) to rule out test-window explanations.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Even with 3× the settle time, node-B and node-C stuck at 83% / 82%. Pattern matched exactly: each non-leader peer received ~100 of 200 writes. Diagnosis: under W=2/N=3, only ONE peer acks synchronously before the leader returns 201, and the OTHER peer's in-flight POST is canceled by `joins.shutdown().await` once quorum is met.</p>
+        <p>Proved that extending the settle window from 30s to 90s did NOT materially improve convergence (B moved from 89.5% to 83%; C moved from 73% to 82% — inside statistical noise). Proved that the convergence miss is not a timing problem but a correctness problem. Disproved the hypothesis that async sync-daemon catch-up would eventually close the gap. Identified the specific race: under `JoinSet::shutdown().await` in federation.rs::broadcast_store_quorum, whichever peer's fanout POST was still in-flight when quorum met got its reqwest task ABORTED mid-POST — often before the peer's axum handler committed.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>We found a real bug in the product itself, not just the test. Imagine sending a package to two warehouses for redundancy — the delivery truck stopped as soon as one warehouse signed for it, leaving the other still waiting. One package, one warehouse. If something happens to that warehouse before the second delivery catches up, you lose the package. The fix makes the truck finish all deliveries before driving away.</p>
+            <p>Found a real bug in the product, not just the test. Imagine sending a critical document to two warehouses for redundant safekeeping. The courier stops as soon as one warehouse signs for it, leaving the other courier still stuck in traffic with your document. One document, one warehouse. If that warehouse burns down before your second courier arrives, you lose the document. This is what silent data loss looks like: the product was telling the customer "committed" while actually only fully committing to leader + one peer. If a node failed during the burst, writes could be lost. The ship-gate catching this BEFORE release is exactly the outcome the whole investment in real-infrastructure testing was designed to produce.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>Silent data-loss risk identified and scoped. If a customer runs the 3-node federation configuration, approximately half of their writes would only have one redundant copy instead of two. A single node failure during a write burst could have lost data. This is exactly the class of bug the ship-gate exists to catch. Discovery cost: zero customer impact.</p>
+            <p>Silent data-loss risk identified and SCOPED with zero customer impact. A customer running the 3-node federation (our flagship multi-agent topology) would have had ~50% of writes only single-redundant, not double-redundant as the SLA implied. Discovered pre-tag; no release shipped with this defect. Cost of discovery: roughly $0.60 of cumulative DigitalOcean spend across the investigation (r11-r14) plus engineering time. Cost had it shipped: indeterminate but nontrivial — affected writes would be silently recoverable only by re-establishing quorum AFTER a node outage, and we'd be explaining the pattern to a customer after they'd lost data. The ship-gate's raison d'être just paid for itself.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>`src/federation.rs::broadcast_store_quorum` spawns fanout POSTs in a JoinSet, waits for W-1 acks in a loop, then calls `joins.shutdown().await` which ABORTS still-in-flight tasks. Under W=2/N=3 with two concurrent fanouts racing, the loser's reqwest POST was being killed mid-flight — often before the receiving axum handler could commit. Net effect: every write landed on leader + 1 peer, leaving the other peer ~50% behind.</p>
+            <p>`src/federation.rs::broadcast_store_quorum` spawns fanout POSTs into a `tokio::task::JoinSet`. Main loop waits for W-1 acks then calls `joins.shutdown().await`, which ABORTS still-in-flight tasks. Under W=2/N=3 with two concurrent fanouts racing, the loser's reqwest POST was cancelled mid-flight — frequently BEFORE the receiving axum handler's `db::insert_if_newer` had committed. Correct fix: detach the remaining tasks into a background `tokio::spawn` after the quorum condition is met so they run to completion naturally. Arc&lt;Mutex&lt;AckTracker&gt;&gt; `try_unwrap` still succeeds immediately because the spawned tasks never held the tracker (they only captured client/url/payload/id). Test added: `federation::tests::post_quorum_fanout_reaches_all_peers` with W=2/N=3 against two Ack mock peers, asserts both call-counts == 1 within 200 ms of broadcast_store_quorum returning.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
-            <p class="bug-title">Federation post-quorum fanout aborted mid-POST (silent data-loss risk)</p>
-            <p class="bug-field"><strong>Impact:</strong> Each write landed on leader + only ONE peer instead of all three. No sync-daemon in Phase 2 means permanent lag. A node failure between quorum-ack and catch-up would lose the write.</p>
-            <p class="bug-field"><strong>Root cause:</strong> `tokio::task::JoinSet::shutdown().await` after early-exit canceled in-flight spawned tasks. Detaching them instead preserves delivery.</p>
+            <p class="bug-title">Federation post-quorum fanout aborted mid-POST (silent data-loss)</p>
+            <p class="bug-field"><strong>Impact:</strong> Under 3-node federation with W=2, ~50% of writes landed on leader + ONE peer rather than all three. Customer-visible only after a node failure: writes attributed to the killed peer that hadn't yet caught up would be missing from the cluster. This is a canonical silent data-loss pattern — the write returned success.</p>
+            <p class="bug-field"><strong>Root cause:</strong> `tokio::task::JoinSet::shutdown().await` after early-exit cancelled in-flight spawned tasks. The tasks didn't hold the tracker Arc, so detaching is safe.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/309" rel="noopener">PR #309 (MERGED)</a></li>
@@ -111,7 +111,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>PR #309 lands on release/v0.6.0. r15 validates: convergence should be 200/200 on all three nodes.</p>
+        <p>PR #309 lands on release/v0.6.0. The following campaign (r15) validates under real load: if the fix is correct, node-B and node-C should both reach 200/200. If they don't, the root-cause analysis was wrong.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

@@ -76,29 +76,29 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>First "final" attempt — establishes the baseline</h2>
-        <p class="verdict">Ran the protocol end-to-end. Initial baseline for regression tracking.</p>
+        <h2>First "final" attempt — baseline for regression tracking</h2>
+        <p class="verdict">Ran the protocol end-to-end, produced artifacts, established the runs/ directory convention that every subsequent campaign adheres to. A working scaffold, not a passing release candidate.</p>
         <h3>What this campaign tested</h3>
-        <p>Full four-phase gate on fresh DigitalOcean infrastructure against release/v0.6.0 tip.</p>
+        <p>Full four-phase gate on fresh DigitalOcean infrastructure against release/v0.6.0 tip. The first campaign to survive all four phases' orchestration without an infra-level abort.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>The campaign workflow, Terraform, and per-phase scripts are coherent enough to execute top-to-bottom and produce artifacts.</p>
+        <p>The campaign workflow, Terraform, per-phase scripts, and aggregator are structurally coherent enough to execute top-to-bottom and produce JSON artifacts under the runs/ convention. It did NOT establish that any particular assertion (convergence, probe classification, migration correctness) passed under the then-current product state — several phases produced empty-or-malformed outputs that later became the subject of ship-gate harness fixes.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>A baseline. Future runs are judged by whether they get further or regress against this starting point.</p>
+            <p>This is the first time all four tests in the test battery at least managed to start and produce a result file, even if some of those results were incomplete. Think of it as proving the gym's equipment all works before measuring an athlete's performance.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>First candidate tag-worthiness check completed. Per-phase evidence is pinned to the commit SHA. Provenance chain established.</p>
+            <p>A structural baseline, not a performance claim. The value this run delivers is establishing that we now have a reproducible, version-controlled protocol with stable output contracts. Subsequent runs are measured relative to this baseline, which is why the per-run dashboard rewards every attempt (red or green) with an entry.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>Establishes the `runs/` directory convention and the per-phase JSON contract that every subsequent campaign adheres to.</p>
+            <p>Establishes the `runs/&lt;campaign-id&gt;/` convention, the per-phase JSON contract (every phase script emits `{pass: bool, reasons: [...]}` plus phase-specific fields), and the aggregator's `campaign-summary.json` shape. The outcome-derivation bug in the aggregator (historical overall_pass:true even for partial campaigns) dates from this run and was only fixed client-side by pages.yml + generate_run_html.sh on 2026-04-20 (see commit dc0f489).</p>
           </article>
         </div>
         <h3>What changed going into the next campaign</h3>
-        <p>Subsequent runs (r10 onward) adopt the runner-driven SSH refactor that both speeds runs up and sharply reduces DO spend.</p>
+        <p>Runs 10+ adopt the runner-driven SSH refactor. Subsequent iteration targets Phase 2 and Phase 4 harness correctness.</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>

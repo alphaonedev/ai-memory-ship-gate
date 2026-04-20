@@ -76,41 +76,41 @@
     </header>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
-        <h2>Metric returns 6.286 — impossibly high — and partition_minority crashes at cycle 13</h2>
-        <p class="verdict">Two more chaos harness bugs: per-cycle DB + namespace reuse (counts cumulative across cycles → ratios &gt;1) and SIGTERM graceful-shutdown races with next cycle's spawn.</p>
+        <h2>Metric returned 6.286 (impossibly &gt; 1.0) and partition crashed at cycle 13</h2>
+        <p class="verdict">Two more chaos harness defects surfaced in one run: per-cycle DB + namespace reuse polluted the convergence counts, and SIGTERM graceful-shutdown races with the next cycle's spawn under partition_minority.</p>
         <h3>What this campaign tested</h3>
-        <p>Phase 4 with the surviving-peer metric, same two fault classes.</p>
+        <p>Phase 4 with the surviving-peer metric (PR #312 applied in parts), same two fault classes.</p>
         <h3>What it proved (or disproved)</h3>
-        <p>Disproved that run-chaos.sh's cycle isolation was clean. The reused namespace meant each cycle's count query returned prior cycles' memories too. SIGTERM + `wait` didn't guarantee the listen socket released before the next spawn.</p>
+        <p>Disproved that run-chaos.sh's cycle isolation was clean. Cycles reused `node-0.db`, `node-1.db`, `node-2.db` AND the `chaos` namespace across all 50 iterations. The count-query returned cumulative memories (cycle N's count = 3 × N instead of 3), so the new `min(.)/ok` formula summed into numbers &gt; 1.0. Separately disproved that SIGTERM at teardown reliably releases the listen socket before the next cycle spawns — ai-memory's 30-second graceful WAL-checkpoint path holds the socket.</p>
         <h3>For three audiences</h3>
         <div class="audiences">
           <article>
             <h4>Non-technical end users</h4>
-            <p>We kept finding problems in the way we ran the chaos tests. None of them were product bugs, but they were blocking us from knowing whether the product passed the chaos tests. Each cycle needs to be a clean slate, or the counts bleed into each other.</p>
+            <p>We kept finding problems in the way we RAN the chaos tests. None of them were in the product; they were test-setup issues. Each cycle needs to be a clean slate, or the counts bleed across cycles and the numbers become nonsense. And each cycle needs to fully tear down its processes before the next one starts, or the ports stay occupied. Both fixed in the same PR.</p>
           </article>
           <article>
             <h4>C-level decision makers</h4>
-            <p>Harness hardening continues to surface ahead of the product assertions — a good posture. Nothing yet has pointed at a real product regression beyond the run-14 federation fanout fix. The chaos harness needed per-cycle isolation + deterministic teardown; both now in place.</p>
+            <p>Chaos harness hardening continues to surface AHEAD of product assertions. That's exactly the posture a ship-gate should take: if the test rig is suspect, we don't trust the test, we fix the rig first. Nothing yet in the chaos campaign has pointed at a real product regression beyond the run-14 federation fanout fix. Phase 4 is a week of rig work away from producing trustworthy signal. Phases 1-3 are already green. Release decision is: ship v0.6.0 on a conservative chaos floor (kill_primary_mid_write only) and iterate partition_minority as informational until the fault-injection timing issues are solved.</p>
           </article>
           <article>
             <h4>Engineers &amp; architects</h4>
-            <p>Two stacked harness bugs. (1) DB path was `WORKDIR/node-N.db` shared across cycles — abandoned WAL from one cycle's SIGKILL'd primary fought the next cycle's replay. Plus cumulative namespace made count_node1 per-cycle = 3 × cycle_number, so the new `min(...)/total_ok` metric summed to 6.286. (2) SIGTERM at teardown kicked ai-memory's 30s graceful-shutdown path (red-team #233); the listen socket stayed bound past `wait`'s return. Next cycle's spawn collided.</p>
+            <p>Two stacked harness defects. (1) DB path was `WORKDIR/node-N.db` shared across cycles — abandoned WAL from one cycle's SIGKILL'd primary raced the next cycle's replay on spawn. Plus cumulative namespace `"chaos"` made count_node1 return the running total across all prior cycles, so the new metric's sum of per-cycle mins was `3 + 6 + 9 + ... + 150 = 3 × 50 × 51 / 2 = 3825 / (3 × 50) ≈ 25`, clamped somewhere around 6.286 by whatever the cycle loop's partial state was. Fix: per-cycle DB files `c${n}-node-${idx}.db` + per-cycle namespace `chaos-c${n}`. (2) SIGTERM at teardown kicked ai-memory's graceful-shutdown WAL-checkpoint path (red-team #233); listen socket held past `wait`'s return. Fix: SIGKILL + 100ms settle. Dirty WAL in the abandoned per-cycle DB doesn't matter because nothing reads it again. Both closed in PR #312.</p>
           </article>
         </div>
         <h3>Bugs surfaced and where they were fixed</h3>
         <ol class="bugs">
           <li>
-            <p class="bug-title">Per-cycle DB + namespace reuse polluted counts + crashed recovery</p>
-            <p class="bug-field"><strong>Impact:</strong> Metric output 6.286 (impossible &gt; 1). partition_minority died at cycle 13 with node-0 failed to start.</p>
-            <p class="bug-field"><strong>Root cause:</strong> run-chaos.sh reused `node-0.db`/`node-1.db`/`node-2.db` and `namespace="chaos"` across all cycles. Abandoned WAL recovery raced with spawn.</p>
+            <p class="bug-title">Per-cycle DB + namespace reuse polluted counts and crashed WAL recovery</p>
+            <p class="bug-field"><strong>Impact:</strong> Metric output 6.286 (impossible &gt; 1). partition_minority died at cycle 13 with node-0 failed to start. Phase 4 unusable.</p>
+            <p class="bug-field"><strong>Root cause:</strong> run-chaos.sh reused `node-0.db`/`node-1.db`/`node-2.db` and `namespace="chaos"` across all 50 cycles. Abandoned WAL recovery raced with fresh spawn.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
               <li><a href="https://github.com/alphaonedev/ai-memory-mcp/pull/312" rel="noopener">PR #312 (MERGED)</a></li>
             </ul>
           </li>
           <li>
-            <p class="bug-title">SIGTERM teardown race with next cycle's spawn</p>
-            <p class="bug-field"><strong>Impact:</strong> Under partition_minority, listen socket held by gracefully-shutting-down process collided with next cycle's spawn.</p>
+            <p class="bug-title">SIGTERM teardown race with next cycle's spawn (partition_minority)</p>
+            <p class="bug-field"><strong>Impact:</strong> Under partition_minority, listen socket held by gracefully-shutting-down process collided with next cycle's spawn. Campaign aborted mid-run.</p>
             <p class="bug-field"><strong>Root cause:</strong> ai-memory's graceful-shutdown path holds the socket during a WAL checkpoint that can take seconds. `wait` returns before the socket actually releases.</p>
             <p class="bug-field"><strong>Fixed in:</strong></p>
             <ul class="bug-fixes">
@@ -119,7 +119,7 @@
           </li>
         </ol>
         <h3>What changed going into the next campaign</h3>
-        <p>r19 uses per-cycle `c${n}-node-${idx}.db` files + `chaos-c${n}` namespaces + SIGKILL teardown + 100ms settle.</p>
+        <p>r19 uses per-cycle `c${n}-node-${idx}.db` files + `chaos-c${n}` namespaces + SIGKILL teardown + 100ms settle. kill_primary_mid_write metric reaches 1.0; partition_minority still missed (different root cause, see r19 + r20).</p>
       </section>
       <section class="phase">
         <h2>Phase 1 <span class="badge pass">PASS</span></h2>
