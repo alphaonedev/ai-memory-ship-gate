@@ -33,6 +33,12 @@
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
     .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
     .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
     .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
@@ -78,6 +84,13 @@
         <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="run-focus">
+        <p class="label">Run focus</p>
+        <h2>Federation convergence miss (B=89.5%, C=73%) + probe SSH 255 killed script</h2>
+        <p><strong>What this campaign set out to test:</strong> 4×50-write burst, 30-second settle, convergence assertion, two quorum probes (one-peer-down → 201, both-peers-down → 503).</p>
+        <p><strong>What it demonstrated:</strong> Disproved that a 30s settle was sufficient for 200 burst writes to reach all three peers under the then-current federation implementation. On node-A (leader) every write landed. On node-B, 179 of 200. On node-C, 146 of 200. This is not an eventual-consistency "slow catch-up" pattern — it's a deterministic "each write is dropped on one peer" pattern. (Run 14 would later confirm this.) Also disproved that a shell-level `|| true` inside quoted remote ssh commands is enough to survive transport-level 255 exits.</p>
+        <p class="muted">Detailed tri-audience analysis is below, followed by per-phase test results for all four phases of the protocol — including any phase that did not run in this campaign.</p>
+      </section>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
         <h2>Federation convergence miss (B=89.5%, C=73%) + probe SSH 255 killed script</h2>
@@ -127,7 +140,8 @@
         <p>r14 bumps the settle to 90s AND wraps probe SSH in outer `|| true`. Convergence stayed below threshold — revealing that the real problem wasn't the test window, it was the product.</p>
       </section>
       <section class="phase">
-        <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <h2>Phase 1 — functional (per-node) <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised.</p>
         <h3>Test results</h3>
         <h4>node-a</h4>
         <ul class="checklist">
@@ -339,7 +353,8 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 2 <span class="badge fail">FAIL</span></h2>
+        <h2>Phase 2 — multi-agent federation <span class="badge fail">FAIL</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions.</p>
         <h3>Test results</h3>
         <ul class="checklist">
           <li class="fail"><span class="check">&#x2717;</span> Burst writes returned 201 <span class="muted">— ok=/ (qnm=, fail=)</span></li>
@@ -356,6 +371,16 @@
           <pre></pre>
           <p><a href="./phase2.json">raw JSON</a></p>
         </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 3 — cross-backend migration <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 4 — chaos campaign <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
       </section>
     <section>
       <h2>All artifacts</h2>

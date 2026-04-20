@@ -364,6 +364,27 @@ checklist_phase4() {
   done <<< "$fault_list"
 }
 
+# Human-readable name for each phase number.
+phase_name() {
+  case "$1" in
+    1) echo "functional (per-node)" ;;
+    2) echo "multi-agent federation" ;;
+    3) echo "cross-backend migration" ;;
+    4) echo "chaos campaign" ;;
+  esac
+}
+
+# What a given phase is there to prove. Shown on every run page so
+# readers can see what the phase measures even if the phase never ran.
+phase_purpose() {
+  case "$1" in
+    1) echo "Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised." ;;
+    2) echo "4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions." ;;
+    3) echo "1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path." ;;
+    4) echo "packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models." ;;
+  esac
+}
+
 # --- phase dossier ---------------------------------------------------
 phase_block() {
   local phase="$1"
@@ -373,23 +394,72 @@ phase_block() {
   else
     for f in "$DIR"/phase"$phase".json; do [ -e "$f" ] && files+=("$f"); done
   fi
-  [ "${#files[@]}" -gt 0 ] || return 0
 
-  # Phase-level PASS/FAIL badge: aggregate the pass_of() result for
-  # every artifact in this phase. ANY failing artifact → phase FAIL.
-  local phase_ok=true
-  for f in "${files[@]}"; do
-    [ "$(pass_of "$f")" = "PASS" ] || { phase_ok=false; break; }
-  done
-  local badge
-  if [ "$phase_ok" = "true" ]; then
-    badge='<span class="badge pass">PASS</span>'
+  # Determine the phase's status. Four possible states:
+  #   PASS         — all artifact files present and .pass == true
+  #   FAIL         — at least one artifact present with .pass != true
+  #   NOT REACHED  — zero artifacts because an earlier phase's failure
+  #                  aborted the campaign before this phase could run
+  #   NOT RUN      — zero artifacts because the phase was intentionally
+  #                  skipped (reserved for future campaigns that can
+  #                  opt out of a phase); today's campaigns don't.
+  #
+  # Every phase renders a section regardless of state — a red "Phase 3
+  # NOT REACHED" is more informative than a silent omission, because
+  # readers can see the protocol shape on every run.
+  local status explanation
+  if [ "${#files[@]}" -eq 0 ]; then
+    # Decide NOT REACHED vs NOT RUN. Today's heuristic: if any
+    # earlier phase's files exist and any of them failed, this phase
+    # was aborted ("NOT REACHED"). Otherwise label NOT RUN.
+    local earlier_fail=false
+    for earlier in $(seq 1 $((phase - 1))); do
+      if [ "$earlier" = "1" ]; then
+        for f in "$DIR"/phase1-node-*.json; do
+          [ -e "$f" ] || continue
+          [ "$(pass_of "$f")" = "FAIL" ] && earlier_fail=true
+        done
+      else
+        if [ -f "$DIR/phase${earlier}.json" ]; then
+          [ "$(pass_of "$DIR/phase${earlier}.json")" = "FAIL" ] && earlier_fail=true
+        else
+          # Missing earlier phase also counts as aborted upstream.
+          earlier_fail=true
+        fi
+      fi
+    done
+    if [ "$earlier_fail" = "true" ]; then
+      status='NOT REACHED'
+      explanation="This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed."
+    else
+      status='NOT RUN'
+      explanation="This phase produced no artifact in this campaign. Either the campaign was an older shape that predates this phase's scripting, or the artifact commit step never landed this file on main. Raw evidence, if any, is linked below."
+    fi
   else
-    badge='<span class="badge fail">FAIL</span>'
+    local phase_ok=true
+    for f in "${files[@]}"; do
+      [ "$(pass_of "$f")" = "PASS" ] || { phase_ok=false; break; }
+    done
+    status=$([ "$phase_ok" = "true" ] && echo "PASS" || echo "FAIL")
   fi
 
+  local badge_class
+  case "$status" in
+    PASS) badge_class="pass" ;;
+    *)    badge_class="fail" ;;
+  esac
+
   printf '      <section class="phase">\n'
-  printf '        <h2>Phase %s %s</h2>\n' "$phase" "$badge"
+  printf '        <h2>Phase %s — %s <span class="badge %s">%s</span></h2>\n' \
+    "$phase" "$(phase_name "$phase")" "$badge_class" "$status"
+  printf '        <p class="phase-purpose"><strong>What this phase proves:</strong> %s</p>\n' "$(phase_purpose "$phase")"
+
+  if [ "${#files[@]}" -eq 0 ]; then
+    printf '        <p class="muted">%s</p>\n' "$explanation"
+    printf '      </section>\n'
+    return 0
+  fi
+
   printf '        <h3>Test results</h3>\n'
   case "$phase" in
     1) for f in "${files[@]}"; do checklist_phase1 "$f"; done ;;
@@ -450,6 +520,12 @@ cat <<EOF
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
     .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
     .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
     .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
@@ -496,6 +572,28 @@ cat <<EOF
       </dl>
     </header>
 EOF
+
+# "Run focus" block — pulled from the insight headline + verdict.
+# Answers "what was this run trying to achieve, and what did it
+# demonstrate?" up front, before the reader scrolls into the phase
+# test results. Hidden for runs with no insight entry.
+if [ -n "$INSIGHTS" ]; then
+  has_insight=$(jq -r --arg n "$NAME" '.[$n] != null' "$INSIGHTS" 2>/dev/null || echo false)
+  if [ "$has_insight" = "true" ]; then
+    headline_top=$(insight_field headline | html_escape)
+    tested_top=$(insight_field what_it_tested | html_escape)
+    proved_top=$(insight_field what_it_proved | html_escape)
+    cat <<EOF_FOCUS
+      <section class="run-focus">
+        <p class="label">Run focus</p>
+        <h2>${headline_top}</h2>
+        <p><strong>What this campaign set out to test:</strong> ${tested_top}</p>
+        <p><strong>What it demonstrated:</strong> ${proved_top}</p>
+        <p class="muted">Detailed tri-audience analysis is below, followed by per-phase test results for all four phases of the protocol — including any phase that did not run in this campaign.</p>
+      </section>
+EOF_FOCUS
+  fi
+fi
 
 render_insights
 for p in 1 2 3 4; do phase_block "$p"; done

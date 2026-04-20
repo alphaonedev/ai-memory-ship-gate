@@ -33,6 +33,12 @@
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
     .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
     .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
     .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
@@ -78,6 +84,13 @@
         <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="run-focus">
+        <p class="label">Run focus</p>
+        <h2>Port collision resolved; source="chaos" now rejected by validation allowlist</h2>
+        <p><strong>What this campaign set out to test:</strong> Phase 4 with three local chaos processes on distinct ports, all sharing the chaos-client droplet as designed. 50 cycles × 2 fault classes.</p>
+        <p><strong>What it demonstrated:</strong> Proved the harness infrastructure (processes, ports, iptables, signals) is structurally sound — writes reach the handler. Disproved that `source="chaos"` is an acceptable caller label for production ai-memory instances with default validation. Reached the same validation boundary that blocked Phase 2 three campaigns earlier.</p>
+        <p class="muted">Detailed tri-audience analysis is below, followed by per-phase test results for all four phases of the protocol — including any phase that did not run in this campaign.</p>
+      </section>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
         <h2>Port collision resolved; source="chaos" now rejected by validation allowlist</h2>
@@ -117,7 +130,8 @@
         <p>PR #310 extends VALID_SOURCES + MCP schema + TS SDK in one commit. r17 should see chaos writes returning 201 pre-fault and exercising the fault-tolerance logic.</p>
       </section>
       <section class="phase">
-        <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <h2>Phase 1 — functional (per-node) <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised.</p>
         <h3>Test results</h3>
         <h4>node-a</h4>
         <ul class="checklist">
@@ -329,7 +343,8 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 2 <span class="badge pass">PASS</span></h2>
+        <h2>Phase 2 — multi-agent federation <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions.</p>
         <h3>Test results</h3>
         <ul class="checklist">
           <li class="pass"><span class="check">&#x2713;</span> Burst writes returned 201 <span class="muted">— ok=200/200 (qnm=0, fail=0)</span></li>
@@ -366,7 +381,8 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 3 <span class="badge pass">PASS</span></h2>
+        <h2>Phase 3 — cross-backend migration <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path.</p>
         <h3>Test results</h3>
         <ul class="checklist">
           <li class="pass"><span class="check">&#x2713;</span> Source SQLite has 1000 seed memories <span class="muted">— src_count=1000</span></li>
@@ -420,7 +436,8 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 4 <span class="badge fail">FAIL</span></h2>
+        <h2>Phase 4 — chaos campaign <span class="badge fail">FAIL</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
         <h3>Test results</h3>
         <ul class="checklist">
           <li class="fail"><span class="check">&#x2717;</span> phase4.json did not parse as JSON — the chaos-harness summary never wrote cleanly <span class="muted">— see raw JSON below</span></li>

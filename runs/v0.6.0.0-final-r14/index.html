@@ -33,6 +33,12 @@
     .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
     .badge.pass { color: var(--pass); background: var(--pass-bg); }
     .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
     .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
     .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
     .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
@@ -78,6 +84,13 @@
         <dt>Overall pass</dt><dd>FAIL</dd>
       </dl>
     </header>
+      <section class="run-focus">
+        <p class="label">Run focus</p>
+        <h2>Convergence STILL missed with 90s settle — silent data-loss bug identified in federation fanout</h2>
+        <p><strong>What this campaign set out to test:</strong> Same burst + probes, with 3× the settle time (30s → 90s) to rule out test-window explanations.</p>
+        <p><strong>What it demonstrated:</strong> Proved that extending the settle window from 30s to 90s did NOT materially improve convergence (B moved from 89.5% to 83%; C moved from 73% to 82% — inside statistical noise). Proved that the convergence miss is not a timing problem but a correctness problem. Disproved the hypothesis that async sync-daemon catch-up would eventually close the gap. Identified the specific race: under `JoinSet::shutdown().await` in federation.rs::broadcast_store_quorum, whichever peer's fanout POST was still in-flight when quorum met got its reqwest task ABORTED mid-POST — often before the peer's axum handler committed.</p>
+        <p class="muted">Detailed tri-audience analysis is below, followed by per-phase test results for all four phases of the protocol — including any phase that did not run in this campaign.</p>
+      </section>
       <section class="ai-insight">
         <p class="tag">AI NHI analysis &middot; Claude Opus 4.7</p>
         <h2>Convergence STILL missed with 90s settle — silent data-loss bug identified in federation fanout</h2>
@@ -118,7 +131,8 @@
         <p>PR #309 lands on release/v0.6.0. The following campaign (r15) validates under real load: if the fix is correct, node-B and node-C should both reach 200/200. If they don't, the root-cause analysis was wrong.</p>
       </section>
       <section class="phase">
-        <h2>Phase 1 <span class="badge pass">PASS</span></h2>
+        <h2>Phase 1 — functional (per-node) <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised.</p>
         <h3>Test results</h3>
         <h4>node-a</h4>
         <ul class="checklist">
@@ -330,7 +344,8 @@
         </details>
       </section>
       <section class="phase">
-        <h2>Phase 2 <span class="badge fail">FAIL</span></h2>
+        <h2>Phase 2 — multi-agent federation <span class="badge fail">FAIL</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions.</p>
         <h3>Test results</h3>
         <ul class="checklist">
           <li class="pass"><span class="check">&#x2713;</span> Burst writes returned 201 <span class="muted">— ok=200/200 (qnm=0, fail=0)</span></li>
@@ -366,6 +381,16 @@
 </pre>
           <p><a href="./phase2.json">raw JSON</a></p>
         </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 3 — cross-backend migration <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 4 — chaos campaign <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
       </section>
     <section>
       <h2>All artifacts</h2>
