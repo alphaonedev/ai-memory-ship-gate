@@ -1,0 +1,170 @@
+{
+  "campaign_id": "v0.6.0.0-final-r13",
+  "ai_memory_git_ref": "release/v0.6.0",
+  "completed_at": "2026-04-20T04:27:40Z",
+  "overall_pass": true,
+  "phases": [
+    {
+      "phase": 1,
+      "host": "aim-v0-6-0-0-final-r13-node-a",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-20T04:26:49.272066563+00:00",
+        "completed_at": "2026-04-20T04:26:49.272521117+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    },
+    {
+      "phase": 1,
+      "host": "aim-v0-6-0-0-final-r13-node-b",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-20T04:26:49.581991284+00:00",
+        "completed_at": "2026-04-20T04:26:49.582578735+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    },
+    {
+      "phase": 1,
+      "host": "aim-v0-6-0-0-final-r13-node-c",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-20T04:26:49.263137618+00:00",
+        "completed_at": "2026-04-20T04:26:49.263610536+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    }
+  ]
+}
