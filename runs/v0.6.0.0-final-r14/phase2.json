@@ -1,0 +1,19 @@
+{
+  "phase": 2,
+  "pass": false,
+  "total_writes": 200,
+  "ok": 200,
+  "quorum_not_met": 0,
+  "fail": 0,
+  "counts": {
+    "a": 200,
+    "b": 166,
+    "c": 164
+  },
+  "probe1_single_peer_down": "201",
+  "probe2_both_peers_down": "503",
+  "reasons": [
+    "node-B count 166 < 95% of 200",
+    "node-C count 164 < 95% of 200"
+  ]
+}
