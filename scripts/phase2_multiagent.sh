@@ -73,8 +73,13 @@ done
 wait
 
 # ---- Settle period ---------------------------------------------
-log "settle 60s for sync-daemon convergence"
-sleep 60
+# 30s is three sync-daemon cycles at default 10s cadence — enough
+# for the quorum-ack + downstream-replicate chain to converge on the
+# default happy path. If the 95%-convergence check fails, bump to 60s
+# via SETTLE_SECS override before assuming a regression.
+SETTLE_SECS="${SETTLE_SECS:-30}"
+log "settle ${SETTLE_SECS}s for sync-daemon convergence"
+sleep "$SETTLE_SECS"
 
 # ---- Convergence check -----------------------------------------
 declare -A COUNTS

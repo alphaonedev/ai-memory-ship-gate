@@ -6,23 +6,32 @@
 # Runs on node-a. Spins Postgres via docker-compose from the
 # ai-memory-mcp repo tree.
 #
-# Prereqs: node-a has ai-memory cloned at /opt/ai-memory-mcp with
-# the release/v0.6.0 ref checked out, plus docker + cargo.
+# Prereqs: the workflow SCP'd /usr/local/bin/ai-memory (pre-built
+# with --features sal,sal-postgres on the runner) + copied the
+# packaging/ tree to /opt/ai-memory-mcp/packaging/. Docker installed.
 
 set -euo pipefail
 
 log() { printf '[phase3] %s\n' "$*" >&2; }
 
-# ---- Build sal-postgres feature if not already built -----------
+# The pre-built binary already has both features; we use the same
+# invocation name everywhere for readability.
+alias ai-memory-sal=/usr/local/bin/ai-memory
+shopt -s expand_aliases
+
 cd /opt/ai-memory-mcp
-log "cargo build --release --features sal-postgres"
-~/.cargo/bin/cargo build --release --features sal-postgres
-install -m 0755 target/release/ai-memory /usr/local/bin/ai-memory-sal
 
 # ---- Start Postgres + pgvector fixture --------------------------
 log "docker compose up pgvector"
 docker compose -f packaging/docker-compose.postgres.yml up -d
-sleep 10
+# Wait for pg to accept connections rather than hard sleep.
+for i in $(seq 1 30); do
+  if docker compose -f packaging/docker-compose.postgres.yml exec -T pgvector \
+       pg_isready -U ai_memory -d ai_memory_test 2>/dev/null | grep -q "accepting"; then
+    log "postgres ready after ${i}s"; break
+  fi
+  sleep 1
+done
 
 PG_URL="postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
 

@@ -45,11 +45,10 @@ variable "region" {
 variable "peer_size" {
   description = "Droplet size for the 3 federation peers."
   type        = string
-  # 8 GB required: `cargo build --release` of ai-memory-mcp with all
-  # deps (candle-transformers, sqlx, rmcp) peaks above 4 GB during
-  # linking, OOM-killing rustc on `s-2vcpu-4gb`. Run 4 confirmed
-  # this empirically — all 4 droplets silently failed cloud-init.
-  default = "s-4vcpu-8gb"
+  # 4 GB is plenty for runtime: binary + HNSW index + sync-daemon. The
+  # build itself happens on the GitHub runner (not on the droplet), so
+  # the old 8 GB rustc-OOM headroom is no longer required.
+  default = "s-2vcpu-4gb"
 }
 
 variable "chaos_size" {

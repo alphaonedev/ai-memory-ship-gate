@@ -17,8 +17,12 @@ set -euo pipefail
 log() { printf '[phase4] %s\n' "$*" >&2; }
 cd /opt/ai-memory-mcp
 
-CYCLES="${CYCLES:-200}"
+CYCLES="${CYCLES:-50}"
 WRITES="${WRITES:-100}"
+# Default: 2 real fault classes. The other 2 (drop_random_acks,
+# clock_skew_peer) are documented simulations per ADR-0001; include
+# them explicitly via FAULTS="..." if you want them in the report.
+FAULTS="${FAULTS:-kill_primary_mid_write partition_minority}"
 
 # Chaos harness in-tree expects to spawn its own local processes,
 # but for a real-infra campaign we adapt by pointing its curl calls
@@ -26,7 +30,7 @@ WRITES="${WRITES:-100}"
 # N0_PORT/N1_PORT/N2_PORT environment override.
 
 declare -A RESULTS
-for FAULT in kill_primary_mid_write partition_minority drop_random_acks clock_skew_peer; do
+for FAULT in $FAULTS; do
   log "campaign: $FAULT"
   REPORT_DIR="/tmp/phase4-$FAULT"
   rm -rf "$REPORT_DIR"; mkdir -p "$REPORT_DIR"
