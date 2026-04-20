@@ -6,15 +6,22 @@ on:
     paths:
       - "docs/**"
       - "runs/**"
+      - "mkdocs.yml"
       - ".github/workflows/pages.yml"
   workflow_run:
     workflows: ["Ship-gate campaign"]
     types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Only one deploy at a time — GitHub Pages rejects concurrent deploys.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -27,21 +34,66 @@ jobs:
       - name: Install mkdocs-material
         run: pip install mkdocs-material mkdocs-macros-plugin
 
+      # Each campaign directory under runs/ gets a Markdown page. We
+      # render the campaign-summary.json header and then per-phase
+      # dossiers pulled directly from phase{1,2,3,4}.json — phase 2
+      # carries federation convergence counts, phase 4 carries the
+      # chaos convergence bound. Failed campaigns still get a page so
+      # the regression history is visible.
       - name: Generate per-campaign pages from runs/
         run: |
+          set -euo pipefail
           mkdir -p docs/runs
-          for dir in runs/*/; do
+          echo "# Campaign runs" > docs/runs/index.md
+          echo >> docs/runs/index.md
+          echo "| Campaign | ai-memory ref | Completed | Pass |" >> docs/runs/index.md
+          echo "|---|---|---|---|" >> docs/runs/index.md
+          # List newest first — rely on lexicographic sort since
+          # campaign ids are monotonic v0.6.0.0-final-rN.
+          for dir in $(ls -1d runs/*/ | sort -r); do
             name=$(basename "$dir")
             summary="$dir/campaign-summary.json"
             [ -f "$summary" ] || continue
+            ref=$(jq -r '.ai_memory_git_ref // "?"' "$summary")
+            completed=$(jq -r '.completed_at // "?"' "$summary")
+            pass=$(jq -r '.overall_pass // false' "$summary")
+            badge=$([ "$pass" = "true" ] && echo "✅ PASS" || echo "❌ FAIL")
+            echo "| [${name}](./${name}.md) | ${ref} | ${completed} | ${badge} |" >> docs/runs/index.md
+
             out="docs/runs/${name}.md"
             {
-              echo "# Campaign $name"
+              echo "# Campaign ${name}"
               echo
-              jq -r '. | "* **ai-memory ref**: \(.ai_memory_git_ref)\n* **Completed at**: \(.completed_at)\n* **Overall pass**: \(.overall_pass)\n"' "$summary"
-              echo "## Phases"
+              echo "- **ai-memory ref**: \`${ref}\`"
+              echo "- **Completed at**: ${completed}"
+              echo "- **Overall pass**: ${badge}"
               echo
-              jq -r '.phases[] | "### Phase \(.phase) — \(if .pass then "PASS" else "FAIL" end)\n\n```json\n\(.|tojson|fromjson|tostring|.[:1500])\n```\n"' "$summary"
+              echo "## Phase summaries"
+              echo
+              for p in 1 2 3 4; do
+                # Phase 1 is per-node; others are single file.
+                if [ "$p" = "1" ]; then
+                  files=$(ls "$dir"phase1-node-*.json 2>/dev/null || true)
+                else
+                  files=$(ls "$dir"phase${p}.json 2>/dev/null || true)
+                fi
+                [ -n "$files" ] || continue
+                echo "### Phase ${p}"
+                echo
+                for f in $files; do
+                  label=$(basename "$f" .json)
+                  echo "<details><summary>${label}</summary>"
+                  echo
+                  echo '```json'
+                  # Cap at 4KB per phase to keep pages legible.
+                  head -c 4096 "$f"
+                  echo
+                  echo '```'
+                  echo
+                  echo "</details>"
+                  echo
+                done
+              done
             } > "$out"
           done
 

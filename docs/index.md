@@ -57,6 +57,21 @@ Detailed steps: [Reproducing](reproducing.md).
 
 ## Cost per run
 
-~$0.65 for a clean ~5-hour run. ~$1.05 overruns. The in-droplet
-dead-man switch caps uptime at 8 hours regardless of workflow state
-— see [Security](security.md).
+~$0.10 for a clean ~15-minute run under the runner-driven SSH
+methodology (commit `f81bd76`) — the GitHub Actions runner holds the
+orchestration, four DigitalOcean droplets hold the workload. The
+in-droplet dead-man switch still caps uptime at 8 hours regardless of
+workflow state — see [Security](security.md).
+
+## Infrastructure
+
+| Component | Size | Role |
+|---|---|---|
+| `node-a`, `node-b`, `node-c` | `s-2vcpu-4gb` | Peer nodes for quorum mesh + migration host |
+| `chaos-client` | `s-1vcpu-2gb` | Orchestration + Phase 4 local 3-process harness |
+| VPC | `10.250.0.0/24` in region | Peer-to-peer federation (port 9077) is VPC-only |
+| Firewall | DO Cloud Firewall | SSH from runner; 9077 from VPC + runner only |
+
+Terraform module under [`terraform/`](https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/terraform)
+is the source of truth. Fork the repo, point `TF_VAR_do_token` at your
+own account, run.

@@ -59,8 +59,8 @@ Each response is bucketed:
 
 ### Settle + convergence
 
-After 60 s of settle time (sync-daemon default cadence is 10 s;
-allow six cycles), list every peer's
+After 90 s of settle time (sync-daemon default cadence is 2 s after
+PR #309; allow ample headroom), list every peer's
 `/api/v1/memories?namespace=ship-gate-phase2&limit=1000` and capture
 the count.
 
@@ -92,8 +92,13 @@ Teardown kills the Postgres container.
 
 ## Phase 4 — chaos campaign
 
-From the chaos-client, run `packaging/chaos/run-chaos.sh` against
-the three-node federation for each of four fault classes:
+From the chaos-client, run `packaging/chaos/run-chaos.sh` LOCALLY on
+that droplet (the harness spawns three ai-memory processes on ports
+`19077/19078/19079` under per-cycle DB isolation). The peer nodes in
+the VPC are not used by phase 4 — signal-level fault injection
+(SIGKILL / SIGSTOP) and iptables rules require local root, and
+ADR-0001's campaign shape is satisfied by the local harness. Four
+fault classes:
 
 1. `kill_primary_mid_write` — SIGKILL node-0 mid-burst.
 2. `partition_minority` — iptables-drop traffic from node-0 to both
@@ -102,25 +107,39 @@ the three-node federation for each of four fault classes:
 4. `clock_skew_peer` — simulated (full CAP_SYS_TIME skew requires
    NTP manipulation; we record the intent).
 
-Per class: 200 cycles × 100 writes/cycle = 20,000 writes.
+Ship-gate default: 50 cycles × 100 writes/cycle per fault class.
+Bump `CHAOS_CYCLES=200` on workflow dispatch for a full soak.
 
-The convergence bound is
-`(sum ok across cycles) / (sum writes across cycles)`.
+The convergence bound (PR #312 metric) is:
+
+```
+min(count_node1_per_cycle, count_node2_per_cycle) / total_ok
+```
+
+— the fraction of writes that returned 201 AND subsequently landed
+on both live peers. Earlier versions used `ok / total_writes`, which
+was mathematically capped at ~2% for kill-type faults and made the
+0.995 threshold unreachable (see the run-17/18 post-mortem in the
+campaign artefacts).
 
 **Pass per class**: convergence_bound ≥ 0.995.
-**Pass overall**: all four classes pass.
+**Pass overall**: all enabled classes pass.
 
-## Per-phase timeouts
+## Per-phase timeouts (runner-driven methodology, commit `f81bd76`)
 
-- Phase 1: 10 min (SSH + CLI ops only).
-- Phase 2: 20 min (write burst + 60 s settle + probes).
-- Phase 3: 20 min (build + Postgres boot + migrations).
-- Phase 4: 180 min (four campaigns × ~40 min each).
+Under the current runner-driven SSH methodology, the GitHub Actions
+runner orchestrates; the droplets execute. Typical clean run is
+13-15 minutes wall clock (not the 60-minute per-droplet baseline of
+earlier methodologies).
 
-The GitHub Actions workflow has a hard 300-minute ceiling. If any
-phase exceeds its allotment, the workflow fails — but the in-droplet
-dead-man switch destroys infrastructure anyway after 8 hours to
-cap cost.
+- Phase 1: ~30 s (SSH + CLI ops per node, parallel).
+- Phase 2: ~3 min (write burst + 90 s settle + probes).
+- Phase 3: ~3 min (build + Postgres boot + migrations).
+- Phase 4: ~6-8 min (50 cycles × 2 default fault classes).
+
+The workflow has a hard 60-minute ceiling on the single job. The
+in-droplet dead-man switch destroys infrastructure after 8 hours
+regardless — cost cap of last resort.
 
 ## What the methodology does NOT cover
 
