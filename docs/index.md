@@ -22,6 +22,7 @@ site is where the evidence is published.
 
 - [Latest campaign runs](runs/) · live dashboard of every attempt
 - [Methodology](methodology.md) · exactly what each phase measures
+- [14-day soak](soak.md) · long-horizon stability testing (84 runs per release, every 4h)
 - [Reproducing](reproducing.md) · run it yourself on your own DO account
 - [Security](security.md) · TLS, mTLS, dead-man switch, key custody
 

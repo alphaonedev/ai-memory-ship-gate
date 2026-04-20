@@ -36,6 +36,7 @@ nav:
       - Phase 3 — migration: phases/phase3.md
       - Phase 4 — chaos: phases/phase4.md
   - Campaign runs: runs/
+  - 14-day soak: soak.md
   - Reproducing: reproducing.md
   - Security: security.md
 

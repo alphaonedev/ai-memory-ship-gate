@@ -1,0 +1,122 @@
+name: Soak campaign (14-day cron)
+
+# Re-dispatches the main ship-gate campaign on a 4-hour cron for
+# 14 days. Each dispatch produces a full ship-gate run under a
+# unique campaign_id (soak-<release>-rN) so artefacts commit
+# alongside the release-gate runs and the /runs/ dashboard aggregates
+# both.
+#
+# Schedule:
+#   */4h  × 14 days  = ~84 soak runs per release
+#   at ~$0.10 each   → ~$8.40 per release's soak window
+#
+# Methodology + assertions: docs/soak.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "The ai-memory release the soak is validating (e.g. v0.6.0). Used as the ai_memory_git_ref for every soak run + baked into every soak campaign_id."
+        required: true
+        default: "v0.6.0"
+      run_number:
+        description: "Ordinal within the soak window. Must be unique. Auto-incremented by the schedule trigger; override manually to re-run a specific ordinal."
+        required: true
+        default: "1"
+  schedule:
+    # Every 4 hours at :13 past (avoiding :00/:30 to spread workflow
+    # load across the fleet per GitHub's best-practice guidance).
+    - cron: "13 */4 * * *"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  dispatch_soak_run:
+    name: "Dispatch a soak run"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Compute the soak campaign_id. For manual dispatch, use the
+      # provided run_number. For cron, walk the existing runs/
+      # directory and pick the next ordinal. The release_tag comes
+      # from a state file committed at soak start time (so cron runs
+      # don't need to know which release they're soaking).
+      - name: Compute campaign_id
+        id: cid
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ github.event.inputs.release_tag }}"
+            n="${{ github.event.inputs.run_number }}"
+          else
+            # Cron-triggered. Read the active release tag from the
+            # state file committed when the operator kicked off the
+            # soak (manually via the workflow_dispatch path with
+            # run_number=1 which also writes .soak-state).
+            if [ ! -f ".soak-state" ]; then
+              echo "::warning::.soak-state missing — no active soak window. Cron is a no-op."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            tag=$(jq -r '.release_tag' .soak-state)
+            # Count existing soak-<tag>-rN dirs to pick the next N.
+            existing=$(ls -1d "runs/soak-${tag}-r"*/ 2>/dev/null | wc -l)
+            n=$((existing + 1))
+            # Soft ceiling: 84 runs (14 days × 6/day).
+            if [ "$n" -gt 84 ]; then
+              echo "::notice::soak window complete for $tag ($((n - 1)) runs). No further dispatches."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "campaign_id=soak-${tag}-r${n}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      # Persist the active release_tag for subsequent cron runs.
+      # Only needed on the first manual kick-off (run_number=1).
+      - name: Write .soak-state on kick-off
+        if: >
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.run_number == '1' &&
+          steps.cid.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          cat > .soak-state <<EOF
+          {
+            "release_tag": "${{ steps.cid.outputs.tag }}",
+            "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "window_runs": 84,
+            "cadence_cron": "13 */4 * * *"
+          }
+          EOF
+          git config user.name "ship-gate-bot"
+          git config user.email "ship-gate-bot@users.noreply.github.com"
+          git add .soak-state
+          git commit -m "soak: start window for ${{ steps.cid.outputs.tag }}" || true
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then break; fi
+            git fetch origin main && git rebase origin/main || { git rebase --abort; exit 1; }
+            sleep $((attempt * 2))
+          done
+
+      # Dispatch the main campaign workflow for this soak run. The
+      # campaign.yml workflow does the actual provisioning + 4-phase
+      # execution + teardown; we just kick it off with a unique id.
+      - name: Trigger campaign.yml
+        if: steps.cid.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          gh workflow run campaign.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f ai_memory_git_ref="${{ steps.cid.outputs.tag }}" \
+            -f campaign_id="${{ steps.cid.outputs.campaign_id }}" \
+            -f chaos_faults="kill_primary_mid_write" \
+            -f chaos_cycles="50"
+          echo "::notice::dispatched ${{ steps.cid.outputs.campaign_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
