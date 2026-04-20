@@ -62,16 +62,26 @@ jobs:
             echo "Each row links to the mkdocs-rendered campaign page plus the"
             echo "self-contained offline evidence HTML shipped in the repo."
             echo
-            echo "Phase badges are per-phase status, not just the overall outcome —"
+            echo "!!! success \"v0.6.0.0-final-r25 — CERTIFIED, tag v0.6.0 shipped\""
+            echo
+            echo "    **Phase 1 ✅  ·  Phase 2 ✅  ·  Phase 3 ✅  ·  Phase 4 ✅  ·  overall_pass: true**"
+            echo
+            echo "    [Evidence HTML](../evidence/v0.6.0.0-final-r25/index.html) &middot; [Raw JSONs](https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/v0.6.0.0-final-r25) &middot; [Release notes](https://github.com/alphaonedev/ai-memory-mcp/releases/tag/v0.6.0)"
+            echo
+            echo "Phase badges below are per-phase status, not just the overall outcome —"
             echo "so a run with green Phase 1/2/3 and a red Phase 4 is visibly"
             echo "three-green-and-one-red without clicking into the campaign page."
             echo
             echo "| Campaign | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Outcome | Completed | ai-memory ref | Evidence |"
             echo "|---|---|---|---|---|---|---|---|---|"
           } > docs/runs/index.md
-          # List newest first — rely on lexicographic sort since
-          # campaign ids are monotonic v0.6.0.0-final-rN.
-          for dir in $(ls -1d runs/*/ | sort -r); do
+          # List newest first. We use version-aware sort `-Vr` on
+          # the stripped-slash names so the lexicographic quirk of
+          # "v0.6.0.0-final/" sorting above "v0.6.0.0-final-r25/"
+          # (because "/" > "-" in ASCII) doesn't hide the passing
+          # certification run behind an older baseline.
+          for dir in $(ls -1d runs/*/ | sed 's:/*$::' | sort -Vr); do
+            dir="${dir}/"
             name=$(basename "$dir")
             summary="$dir/campaign-summary.json"
             [ -f "$summary" ] || continue
