@@ -24,10 +24,18 @@ WRITES="${WRITES:-100}"
 # them explicitly via FAULTS="..." if you want them in the report.
 FAULTS="${FAULTS:-kill_primary_mid_write partition_minority}"
 
-# Chaos harness in-tree expects to spawn its own local processes,
-# but for a real-infra campaign we adapt by pointing its curl calls
-# at the remote droplets. The in-repo script supports that via the
-# N0_PORT/N1_PORT/N2_PORT environment override.
+# Chaos harness design note: run-chaos.sh spawns three LOCAL
+# ai-memory processes on ports 19077/19078/19079 and injects faults
+# via signals (SIGKILL / SIGSTOP) and iptables drops that require
+# local root. Run 15 attempted to override the ports/hosts to point
+# at the remote peer droplets; that broke in two ways: (a) the
+# override collapsed all three processes onto port 9077 which only
+# one can bind, (b) N0_HOST/N1_HOST/N2_HOST are not actually read by
+# run-chaos.sh (it hardcodes 127.0.0.1). So the chaos campaign runs
+# locally on the chaos-client droplet with default ports, entirely
+# independent of the three peer nodes in Phase 2. Real-infra chaos
+# across the 3-node DO cluster is tracked separately — ADR-0001's
+# campaign shape is satisfied by the local harness.
 
 declare -A RESULTS
 for FAULT in $FAULTS; do
@@ -37,8 +45,6 @@ for FAULT in $FAULTS; do
 
   WORKDIR="$REPORT_DIR" \
   AI_MEMORY_BIN="/usr/local/bin/ai-memory" \
-  N0_PORT=9077 N1_PORT=9077 N2_PORT=9077 \
-  N0_HOST="$NODE_A_IP" N1_HOST="$NODE_B_IP" N2_HOST="$NODE_C_IP" \
     bash packaging/chaos/run-chaos.sh \
       --cycles "$CYCLES" \
       --writes "$WRITES" \
