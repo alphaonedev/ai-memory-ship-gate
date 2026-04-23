@@ -1,0 +1,12 @@
+{
+  "phase": 4,
+  "pass": true,
+  "cycles_per_fault": 50,
+  "writes_per_cycle": 100,
+  "convergence_by_fault": {
+    "kill_primary_mid_write": 1
+  },
+  "reasons": [
+    ""
+  ]
+}
