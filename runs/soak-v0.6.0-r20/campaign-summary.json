@@ -1,0 +1,236 @@
+{
+  "campaign_id": "soak-v0.6.0-r20",
+  "ai_memory_git_ref": "v0.6.0",
+  "completed_at": "2026-04-24T01:17:03Z",
+  "overall_pass": true,
+  "phases": [
+    {
+      "phase": 1,
+      "host": "aim-soak-v0-6-0-r20-node-a",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-24T01:08:51.981664408+00:00",
+        "completed_at": "2026-04-24T01:08:51.982214008+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    },
+    {
+      "phase": 1,
+      "host": "aim-soak-v0-6-0-r20-node-b",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-24T01:08:51.882492813+00:00",
+        "completed_at": "2026-04-24T01:08:51.882957620+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    },
+    {
+      "phase": 1,
+      "host": "aim-soak-v0-6-0-r20-node-c",
+      "version": "ai-memory 0.6.0",
+      "pass": true,
+      "reasons": [
+        ""
+      ],
+      "stats": {
+        "total": 1,
+        "by_tier": [
+          {
+            "tier": "mid",
+            "count": 1
+          }
+        ],
+        "by_namespace": [
+          {
+            "namespace": "ship-gate-phase1",
+            "count": 1
+          }
+        ],
+        "expiring_soon": 0,
+        "links_count": 0,
+        "db_size_bytes": 139264
+      },
+      "curator": {
+        "started_at": "2026-04-24T01:08:52.319791814+00:00",
+        "completed_at": "2026-04-24T01:08:52.320238673+00:00",
+        "cycle_duration_ms": 0,
+        "memories_scanned": 1,
+        "memories_eligible": 1,
+        "auto_tagged": 0,
+        "contradictions_found": 0,
+        "operations_attempted": 0,
+        "operations_skipped_cap": 0,
+        "autonomy": {
+          "clusters_formed": 0,
+          "memories_consolidated": 0,
+          "memories_forgotten": 0,
+          "priority_adjustments": 0,
+          "rollback_entries_written": 0,
+          "errors": []
+        },
+        "errors": [
+          "no LLM client configured"
+        ],
+        "dry_run": true
+      },
+      "mcp_tool_count": 36,
+      "recall_count": 1,
+      "snapshot_count": 1,
+      "manifest_count": 1
+    },
+    {
+      "phase": 2,
+      "pass": true,
+      "total_writes": 200,
+      "ok": 200,
+      "quorum_not_met": 0,
+      "fail": 0,
+      "counts": {
+        "a": 200,
+        "b": 200,
+        "c": 200
+      },
+      "probe1_single_peer_down": "201",
+      "probe2_both_peers_down": "503",
+      "reasons": [
+        ""
+      ]
+    },
+    {
+      "phase": 3,
+      "pass": true,
+      "report_forward": {
+        "batches": 1,
+        "dry_run": false,
+        "errors": [],
+        "from_url": "sqlite:///tmp/phase3-source.db",
+        "memories_read": 1000,
+        "memories_written": 1000,
+        "to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+      },
+      "report_idempotent": {
+        "batches": 1,
+        "dry_run": false,
+        "errors": [],
+        "from_url": "sqlite:///tmp/phase3-source.db",
+        "memories_read": 1000,
+        "memories_written": 1000,
+        "to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+      },
+      "report_reverse": {
+        "batches": 1,
+        "dry_run": false,
+        "errors": [],
+        "from_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test",
+        "memories_read": 1000,
+        "memories_written": 1000,
+        "to_url": "sqlite:///tmp/phase3-roundtrip.db"
+      },
+      "src_count": 1000,
+      "dst_count": 1000,
+      "reasons": [
+        ""
+      ]
+    },
+    {
+      "phase": 4,
+      "pass": true,
+      "cycles_per_fault": 50,
+      "writes_per_cycle": 100,
+      "convergence_by_fault": {
+        "kill_primary_mid_write": 1
+      },
+      "reasons": [
+        ""
+      ]
+    }
+  ]
+}
