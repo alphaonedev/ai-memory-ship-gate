@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campaign soak-v0.6.0-r44 — ai-memory ship-gate</title>
+  <meta name="description" content="AI NHI analysis + per-phase evidence for ai-memory-mcp ship-gate campaign soak-v0.6.0-r44 (ref v0.6.0).">
+  <style>
+    :root {
+      --fg: #1a1a1a; --bg: #fff; --muted: #666;
+      --pass: #1a8b3c; --fail: #b32222; --pass-bg: #e6f6ea; --fail-bg: #fceaea;
+      --border: #e0e0e0; --code-bg: #f7f7f9; --accent: #3952c8; --accent-bg: #eef1fd;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #eaeaea; --bg: #181818; --muted: #a0a0a0;
+        --pass: #4adc76; --fail: #ff6a6a; --pass-bg: #153d23; --fail-bg: #401818;
+        --border: #2a2a2a; --code-bg: #202028; --accent: #8da3ff; --accent-bg: #1c2140;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    header p.crumb { color: var(--muted); font-size: 13px; margin: 0 0 .25rem; }
+    h1 { margin: .25rem 0 .75rem; font-size: 1.85rem; }
+    h2 { margin: 1.75rem 0 .5rem; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h3 { margin: 1.25rem 0 .4rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+    h4 { margin: .5rem 0 .25rem; font-size: 1rem; }
+    dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+    dl.meta dt { color: var(--muted); }
+    dl.meta dd { margin: 0; }
+    .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
+    .badge.pass { color: var(--pass); background: var(--pass-bg); }
+    .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
+    .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
+    .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight p.verdict { font-size: 1.05rem; margin: .5rem 0 1rem; }
+    .audiences { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-top: .5rem; }
+    @media (min-width: 720px) { .audiences { grid-template-columns: repeat(3, 1fr); } }
+    .audiences article { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .85rem 1rem; }
+    .audiences article h4 { margin-top: 0; color: var(--accent); font-size: 14px; letter-spacing: .02em; }
+    .audiences article p { margin: .25rem 0 0; font-size: 14px; }
+    ol.bugs { margin: .5rem 0; padding-left: 1.25rem; }
+    ol.bugs > li { margin-bottom: .75rem; }
+    ol.bugs p.bug-title { font-weight: 600; margin: .25rem 0; }
+    ol.bugs p.bug-field { margin: .25rem 0; font-size: 14px; }
+    ol.bugs ul.bug-fixes { margin: .25rem 0 .5rem 1rem; padding: 0; list-style: disc; font-size: 14px; }
+    ul.checklist { list-style: none; padding: 0; margin: .25rem 0 .75rem; }
+    ul.checklist li { padding: .2rem 0 .2rem 0; font-size: 14px; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+    ul.checklist li .check { display: inline-block; width: 1.25rem; text-align: center; font-weight: 700; font-size: 15px; }
+    ul.checklist li.pass .check { color: var(--pass); }
+    ul.checklist li.fail .check { color: var(--fail); }
+    ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
+    table.cycle-table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    table.cycle-table th, table.cycle-table td { padding: .2rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
+    table.cycle-table th:first-child, table.cycle-table td:first-child { text-align: left; }
+    table.cycle-table th { background: var(--code-bg); font-weight: 600; }
+    details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
+    details[open] { padding-bottom: .5rem; }
+    summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
+    pre { background: var(--code-bg); padding: .75rem; border-radius: 6px; overflow-x: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--muted); font-size: 14px; }
+    footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="crumb"><a href="../">../ runs index</a> &middot; <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/soak-v0.6.0-r44/">rendered on Pages</a></p>
+      <h1>Campaign soak-v0.6.0-r44 <span class="badge pass">PASS</span></h1>
+      <dl class="meta">
+        <dt>ai-memory ref</dt><dd><code>v0.6.0</code></dd>
+        <dt>Completed at</dt><dd>2026-04-28T01:20:03Z</dd>
+        <dt>Overall pass</dt><dd>PASS</dd>
+      </dl>
+    </header>
+      <section class="ai-insight">
+        <h2>AI NHI analysis</h2>
+        <p class="muted">No per-campaign narrative recorded for this run. The workflow appends entries to <code>analysis/run-insights.json</code> as each campaign completes; older runs that predate the automation show this placeholder. Raw evidence below is unaffected.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 1 — functional (per-node) <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised.</p>
+        <h3>Test results</h3>
+        <h4>node-a</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-b</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h4>node-c</h4>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Stats total ≥ 1 (store + list + stats round-trip) <span class="muted">— 1 memories</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Recall returned ≥ 1 hit <span class="muted">— 1 hits</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup snapshot file emitted <span class="muted">— 1 snapshot(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Backup manifest file emitted <span class="muted">— 1 manifest(s)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> MCP handshake advertises ≥ 30 tools <span class="muted">— 36 tools</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Curator dry-run clean (Ollama-not-configured is accepted) <span class="muted">— 1 errors</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-1 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
+        <details>
+          <summary>phase1-node-a</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-soak-v0-6-0-r44-node-a",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-28T01:11:46.247632864+00:00",
+		"completed_at": "2026-04-28T01:11:46.248142067+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-a.json">raw JSON</a></p>
+        </details>
+        <details>
+          <summary>phase1-node-b</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-soak-v0-6-0-r44-node-b",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-28T01:11:46.264232503+00:00",
+		"completed_at": "2026-04-28T01:11:46.264813034+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-b.json">raw JSON</a></p>
+        </details>
+        <details>
+          <summary>phase1-node-c</summary>
+          <pre>{
+	"phase": 1,
+	"host": "aim-soak-v0-6-0-r44-node-c",
+	"version": "ai-memory 0.6.0",
+	"pass": true,
+	"reasons": [
+		""
+	],
+	"stats": {
+		"total": 1,
+		"by_tier": [
+			{
+				"tier": "mid",
+				"count": 1
+			}
+		],
+		"by_namespace": [
+			{
+				"namespace": "ship-gate-phase1",
+				"count": 1
+			}
+		],
+		"expiring_soon": 0,
+		"links_count": 0,
+		"db_size_bytes": 139264
+	},
+	"curator": {
+		"started_at": "2026-04-28T01:11:46.232472336+00:00",
+		"completed_at": "2026-04-28T01:11:46.232906964+00:00",
+		"cycle_duration_ms": 0,
+		"memories_scanned": 1,
+		"memories_eligible": 1,
+		"auto_tagged": 0,
+		"contradictions_found": 0,
+		"operations_attempted": 0,
+		"operations_skipped_cap": 0,
+		"autonomy": {
+			"clusters_formed": 0,
+			"memories_consolidated": 0,
+			"memories_forgotten": 0,
+			"priority_adjustments": 0,
+			"rollback_entries_written": 0,
+			"errors": []
+		},
+		"errors": [
+			"no LLM client configured"
+		],
+		"dry_run": true
+	},
+	"mcp_tool_count": 36,
+	"recall_count": 1,
+	"snapshot_count": 1,
+	"manifest_count": 1
+}
+</pre>
+          <p><a href="./phase1-node-c.json">raw JSON</a></p>
+        </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 2 — multi-agent federation <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions.</p>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Burst writes returned 201 <span class="muted">— ok=200/200 (qnm=0, fail=0)</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-A convergence ≥ 95% of ok <span class="muted">— a=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-B convergence ≥ 95% of ok <span class="muted">— b=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> node-C convergence ≥ 95% of ok <span class="muted">— c=200 / threshold 190</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Probe 1: one peer down → 201 (quorum met via remaining peer) <span class="muted">— got 201</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Probe 2: both peers down → 503 (quorum_not_met) <span class="muted">— got 503</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-2 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
+        <details>
+          <summary>phase2</summary>
+          <pre>{
+	"phase": 2,
+	"pass": true,
+	"total_writes": 200,
+	"ok": 200,
+	"quorum_not_met": 0,
+	"fail": 0,
+	"counts": {
+		"a": 200,
+		"b": 200,
+		"c": 200
+	},
+	"probe1_single_peer_down": "201",
+	"probe2_both_peers_down": "503",
+	"reasons": [
+		""
+	]
+}
+</pre>
+          <p><a href="./phase2.json">raw JSON</a></p>
+        </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 3 — cross-backend migration <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path.</p>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Source SQLite has 1000 seed memories <span class="muted">— src_count=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Destination after reverse roundtrip has 1000 memories <span class="muted">— dst_count=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Forward migration SQLite → Postgres: errors=0 <span class="muted">— errors=0</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Idempotent re-run is a no-op <span class="muted">— writes=1000</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Reverse migration Postgres → SQLite: errors=0 <span class="muted">— errors=0</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-3 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
+        <details>
+          <summary>phase3</summary>
+          <pre>{
+	"phase": 3,
+	"pass": true,
+	"report_forward": {
+		"batches": 1,
+		"dry_run": false,
+		"errors": [],
+		"from_url": "sqlite:///tmp/phase3-source.db",
+		"memories_read": 1000,
+		"memories_written": 1000,
+		"to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+	},
+	"report_idempotent": {
+		"batches": 1,
+		"dry_run": false,
+		"errors": [],
+		"from_url": "sqlite:///tmp/phase3-source.db",
+		"memories_read": 1000,
+		"memories_written": 1000,
+		"to_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test"
+	},
+	"report_reverse": {
+		"batches": 1,
+		"dry_run": false,
+		"errors": [],
+		"from_url": "postgres://ai_memory:ai_memory_test@127.0.0.1:5433/ai_memory_test",
+		"memories_read": 1000,
+		"memories_written": 1000,
+		"to_url": "sqlite:///tmp/phase3-roundtrip.db"
+	},
+	"src_count": 1000,
+	"dst_count": 1000,
+	"reasons": [
+		""
+	]
+}
+</pre>
+          <p><a href="./phase3.json">raw JSON</a></p>
+        </details>
+      </section>
+      <section class="phase">
+        <h2>Phase 4 — chaos campaign <span class="badge pass">PASS</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
+        <h3>Test results</h3>
+        <ul class="checklist">
+          <li class="pass"><span class="check">&#x2713;</span> Chaos fault class: kill_primary_mid_write convergence_bound ≥ 0.995 <span class="muted">— got 1</span></li>
+          <li class="pass"><span class="check">&#x2713;</span> Overall phase-4 pass flag</li>
+        </ul>
+        <h3>Raw evidence</h3>
+        <details>
+          <summary>phase4</summary>
+          <pre>{
+	"phase": 4,
+	"pass": true,
+	"cycles_per_fault": 50,
+	"writes_per_cycle": 100,
+	"convergence_by_fault": {
+		"kill_primary_mid_write": 1
+	},
+	"reasons": [
+		""
+	]
+}
+</pre>
+          <p><a href="./phase4.json">raw JSON</a></p>
+        </details>
+      </section>
+    <section>
+      <h2>All artifacts</h2>
+      <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
+      <ul>
+        <li><a href="./campaign-summary.json">campaign-summary.json</a></li>
+        <li><a href="./phase1-node-a.json">phase1-node-a.json</a></li>
+        <li><a href="./phase1-node-b.json">phase1-node-b.json</a></li>
+        <li><a href="./phase1-node-c.json">phase1-node-c.json</a></li>
+        <li><a href="./phase2.json">phase2.json</a></li>
+        <li><a href="./phase3.json">phase3.json</a></li>
+        <li><a href="./phase4.json">phase4.json</a></li>
+      </ul>
+    </section>
+    <footer>
+      Generated by <code>scripts/generate_run_html.sh</code>.
+      Campaign directory:
+      <a href="https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/soak-v0.6.0-r44">
+        alphaonedev/ai-memory-ship-gate/runs/soak-v0.6.0-r44
+      </a>.
+      Methodology:
+      <a href="https://alphaonedev.github.io/ai-memory-ship-gate/methodology/">
+        alphaonedev.github.io/ai-memory-ship-gate/methodology
+      </a>.
+      Analysis data source: <code>analysis/run-insights.json</code>.
+    </footer>
+  </main>
+</body>
+</html>
