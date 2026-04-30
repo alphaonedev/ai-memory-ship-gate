@@ -36,6 +36,12 @@ site/
 public/
 _site/
 
+# Python virtualenv + bytecode (mkdocs-macros builds use these locally).
+.venv/
+venv/
+__pycache__/
+*.pyc
+
 # Editor + OS files.
 .DS_Store
 .idea/
