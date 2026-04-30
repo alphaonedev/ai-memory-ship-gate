@@ -1,0 +1,119 @@
+name: Release summary gate
+
+# Release-blocking validator (Phase P0 of REMEDIATIONv0631).
+#
+# On every `v*` tag push this workflow asserts:
+#   1. releases/<tag>/summary.json exists.
+#   2. It parses as JSON.
+#   3. It validates against releases/schema.json.
+#   4. summary.version == tag.
+#   5. summary.verdict == "pass".
+#
+# A failure here means the landing page would surface a tag with no
+# evidence — block the release. The workflow is also dispatchable for
+# manual revalidation and runs on PRs that touch releases/ so authors
+# get the failure pre-merge.
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - "releases/**"
+      - ".github/workflows/release-summary-gate.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to validate (e.g. v0.6.3). Required for workflow_dispatch."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install jsonschema
+        run: pip install jsonschema==4.*
+
+      - name: Resolve version under test
+        id: ver
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ]; then
+            ver="${GITHUB_REF#refs/tags/}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ver="${{ inputs.version }}"
+          else
+            # PR: validate every release directory present.
+            ver="__all__"
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          echo "Validating: $ver"
+
+      - name: Validate summary(s)
+        run: |
+          set -euo pipefail
+          ver='${{ steps.ver.outputs.version }}'
+          if [ ! -f releases/schema.json ]; then
+            echo "::error::releases/schema.json missing — schema is required."
+            exit 1
+          fi
+
+          validate_one() {
+            local v="$1"
+            local f="releases/${v}/summary.json"
+            echo "::group::validate ${v}"
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing ${f}. A v* tag without a summary.json is release-blocked per Phase P0 of REMEDIATIONv0631."
+              return 1
+            fi
+            python - <<PY
+          import json, sys
+          import jsonschema
+          with open("releases/schema.json") as s:
+              schema = json.load(s)
+          with open("${f}") as d:
+              data = json.load(d)
+          jsonschema.validate(data, schema)
+          want_version = "${v}"
+          if data.get("version") != want_version:
+              print(f"::error::summary.version ({data.get('version')!r}) != tag ({want_version!r})")
+              sys.exit(2)
+          if data.get("verdict") != "pass":
+              # Hard-fail on tag push (a failed release should not be tagged).
+              # On PR / manual, allow non-pass for staging visibility.
+              if "${{ github.event_name }}" == "push":
+                  print(f"::error::summary.verdict is {data.get('verdict')!r}, expected 'pass' for a v* tag push.")
+                  sys.exit(3)
+              else:
+                  print(f"::warning::summary.verdict is {data.get('verdict')!r}; allowed pre-tag.")
+          print(f"OK: ${f}")
+          PY
+            echo "::endgroup::"
+          }
+
+          if [ "$ver" = "__all__" ]; then
+            shopt -s nullglob
+            any=false
+            for d in releases/*/; do
+              v="$(basename "$d")"
+              [ -f "${d}summary.json" ] || continue
+              any=true
+              validate_one "$v"
+            done
+            if [ "$any" = "false" ]; then
+              echo "::warning::No releases/<v>/summary.json present — schema-only PR."
+            fi
+          else
+            validate_one "$ver"
+          fi

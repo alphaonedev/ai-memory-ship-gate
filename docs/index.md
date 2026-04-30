@@ -1,18 +1,13 @@
 # ai-memory ship-gate
 
-!!! success "v0.6.0.0 — FULL 4/4 GREEN on real DigitalOcean infrastructure"
-
-    **Campaign `v0.6.0.0-final-r25` returned `overall_pass: true` on 2026-04-20 at 18:05 UTC.**
-    Every phase passed on fresh DigitalOcean droplets against commit `710ad76`:
-
-    - **Phase 1 functional** — ✅ PASS on all three peer droplets
-    - **Phase 2 federation** — ✅ PASS (200/200/200 convergence, both quorum probes classified correctly)
-    - **Phase 3 migration** — ✅ PASS (1000/1000 SQLite↔Postgres round-trip, 0 errors)
-    - **Phase 4 chaos** — ✅ PASS (`kill_primary_mid_write` convergence_bound = 1.0)
-
-    [**→ r25 evidence JSON (on GitHub)**](https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/v0.6.0.0-final-r25) &middot;
-    [**→ r25 offline HTML**](evidence/v0.6.0.0-final-r25/index.html) &middot;
-    [**→ v0.6.0 release notes**](https://github.com/alphaonedev/ai-memory-mcp/releases/tag/v0.6.0)
+<!--
+  Latest release banner is rendered from releases/<highest-semver>/summary.json
+  by the `render_current_release` macro defined in ../main.py. To bump the
+  surfaced release, add a new releases/<vX.Y.Z>/summary.json with verdict
+  "pass" — no edits to this file required. Schema lives in releases/schema.json
+  and is enforced on tag push by .github/workflows/release-summary-gate.yml.
+-->
+{{ render_current_release() }}
 
 Reproducible release-testing for
 [ai-memory-mcp](https://github.com/alphaonedev/ai-memory-mcp).
@@ -188,16 +183,21 @@ The workflow runs `terraform apply` at campaign start and
 
 ---
 
-## Current release gate
+## Release history
 
-**`v0.6.0.0` — CERTIFIED.** Tag pushed at commit `710ad76` on
-2026-04-20 at 18:07 UTC. See [Campaign runs](runs/) for the r25
-artefacts and every prior attempt in the series.
+Every released `vX.Y.Z` ships a `releases/<version>/summary.json` artifact
+that this page reads at build time. The highest-semver entry is the headline
+banner above; the table below lists every published release in reverse-chronological
+order. See [Campaign runs](runs/) for every campaign attempt (including failed
+runs) per release.
 
-Next gate: `v0.6.0.1` — will focus on closing `partition_minority`
-convergence, deferred from the v0.6.0 release (was informational,
-not release-blocking — kill_primary_mid_write is the disaster
-scenario customers care about and is the required chaos class).
+{{ render_release_history() }}
+
+The schema for `summary.json` lives in
+[`releases/schema.json`](https://github.com/alphaonedev/ai-memory-ship-gate/blob/main/releases/schema.json).
+Pushing a `v*` tag without a matching `releases/<tag>/summary.json` fails the
+release-blocking [`release-summary-gate`](https://github.com/alphaonedev/ai-memory-ship-gate/actions/workflows/release-summary-gate.yml)
+workflow before any artifact is published.
 
 ---
 

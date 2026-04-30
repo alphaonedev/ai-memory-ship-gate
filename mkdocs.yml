@@ -40,6 +40,15 @@ nav:
   - Reproducing: reproducing.md
   - Security: security.md
 
+plugins:
+  - search
+  # Enables ./main.py to expose `render_current_release` etc. The landing
+  # page (docs/index.md) calls these macros so a release bump only
+  # requires adding releases/<version>/summary.json — no edits to
+  # docs/index.md. See main.py for the schema.
+  - macros:
+      module_name: main
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight

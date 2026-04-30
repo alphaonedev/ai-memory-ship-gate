@@ -6,6 +6,8 @@ on:
     paths:
       - "docs/**"
       - "runs/**"
+      - "releases/**"
+      - "main.py"
       - "mkdocs.yml"
       - ".github/workflows/pages.yml"
   workflow_run:

@@ -1,0 +1,60 @@
+{
+  "$schema": "../schema.json",
+  "version": "v0.6.3",
+  "campaign_run_id": "25007261531",
+  "date": "2026-04-27",
+  "ai_memory_git_ref": "release/v0.6.3",
+  "ai_memory_commit": "2cfcc18",
+  "wall_seconds": 840,
+  "wall_human": "14m",
+  "pass_count": 4,
+  "fail_count": 0,
+  "verdict": "pass",
+  "headline": "v0.6.3 — 4/4 phases green — 14m wall — 2026-04-27",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "functional",
+      "pass": true,
+      "wall_seconds": 3,
+      "wall_human": "3s",
+      "notes": "CRUD, MCP handshake, curator dry-run, backup on three peer droplets"
+    },
+    {
+      "phase": 2,
+      "name": "federation",
+      "pass": true,
+      "wall_seconds": 116,
+      "wall_human": "1m56s",
+      "notes": "4 agents x 50 writes x 3 nodes, 90s settle, both quorum probes classified"
+    },
+    {
+      "phase": 3,
+      "name": "migration",
+      "pass": true,
+      "wall_seconds": 85,
+      "wall_human": "1m25s",
+      "notes": "1000-memory SQLite -> Postgres -> SQLite round-trip, 0 errors"
+    },
+    {
+      "phase": 4,
+      "name": "chaos",
+      "pass": true,
+      "wall_seconds": 324,
+      "wall_human": "5m24s",
+      "notes": "kill_primary_mid_write convergence_bound = 1.0"
+    }
+  ],
+  "evidence": {
+    "campaign_dir": "runs/ship-gate-v0.6.3-rc1-r2",
+    "campaign_summary_json": "runs/ship-gate-v0.6.3-rc1-r2/campaign-summary.json",
+    "offline_html": "evidence/ship-gate-v0.6.3-rc1-r2/index.html",
+    "release_notes_url": "https://github.com/alphaonedev/ai-memory-mcp/releases/tag/v0.6.3",
+    "test_hub_url": "https://alphaonedev.github.io/ai-memory-test-hub/releases/v0.6.3/"
+  },
+  "release": {
+    "tag": "v0.6.3",
+    "tag_signed": "gpg",
+    "channels": ["crates.io", "Docker GHCR", "Homebrew", "Fedora COPR"]
+  }
+}
