@@ -9,7 +9,38 @@ published live to GitHub Pages.
 - **Campaign dashboard**: <https://alphaonedev.github.io/ai-memory-ship-gate/>
 - **Campaign workflow**: [`.github/workflows/campaign.yml`](.github/workflows/campaign.yml)
 - **Per-run artifacts**: [`runs/`](runs/)
+- **Governance**: [`docs/governance.md`](docs/governance.md)
 - **Latest methodology**: [`docs/methodology.md`](docs/methodology.md)
+
+---
+
+## Governance
+
+ship-gate is the **substrate-only** pre-tag gate for the ai-memory
+release train. It produces binary, reproducible substrate evidence
+(four phases of shell-driven assertions on real DigitalOcean
+droplets) and nothing else. It does not measure NHI behavior, run
+LLM-driven agents, or compute treatment effects — those claims are
+the exclusive domain of the per-release A2A campaigns under
+`ai-memory-a2a-v<release>` that run downstream of a green ship-gate.
+
+The release-train dependency is **substrate first, then NHI**:
+
+```
+ship-gate (substrate) ─→ git tag ─→ per-release A2A (substrate cert + NHI playbook)
+```
+
+A red ship-gate blocks the tag, which blocks every downstream
+campaign. ship-gate findings are joined to NHI-layer correlates
+downstream via `ai_memory_git_ref` + `ai_memory_commit` as the
+primary join key.
+
+ship-gate's instantiation of the cross-repo First-Principles
+governance — which six principles apply, which do not, and how each
+applicable principle is realized in the existing four-phase
+structure — is in [`docs/governance.md`](docs/governance.md). The
+canonical meta-governance lives in
+[`ai-memory-ai2ai-gate`](https://github.com/alphaonedev/ai-memory-ai2ai-gate).
 
 ---
 

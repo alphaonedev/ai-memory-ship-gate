@@ -29,6 +29,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Governance: governance.md
   - Methodology: methodology.md
   - Phases:
       - Phase 1 — functional: phases/phase1.md
