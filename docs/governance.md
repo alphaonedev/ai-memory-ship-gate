@@ -11,7 +11,7 @@
 | Subject under test | `ai-memory-mcp` (whichever git ref the campaign was dispatched against) |
 | Gate role | **Substrate-only** pre-tag gate. Runs on RC droplets before any release tag is cut. |
 | Truth-claim covered | Claim A — substrate correctness. Claim B (substrate utility / NHI behavior) is covered by per-release A2A campaigns downstream. |
-| Canonical governance home | [`alphaonedev/ai-memory-ai2ai-gate/docs/governance/META-GOVERNANCE.md`](https://github.com/alphaonedev/ai-memory-ai2ai-gate) (in flight; see `<placeholder: ai2ai-gate#TBD>` until the meta-governance PR lands). This document is the ship-gate **instantiation** of that meta-governance and defers to it on any conflict. |
+| Canonical governance home | [`alphaonedev/ai-memory-ai2ai-gate/docs/governance/META-GOVERNANCE.md`](https://github.com/alphaonedev/ai-memory-ai2ai-gate/blob/refactor/canonical-first-principles-governance/docs/governance/META-GOVERNANCE.md) (canonical PR: [ai2ai-gate#70](https://github.com/alphaonedev/ai-memory-ai2ai-gate/pull/70) — pin SHA once merged). This document is the ship-gate **instantiation** of that meta-governance and defers to it on any conflict. |
 | Sibling instantiations | [`ai-memory-a2a-v0.6.3.1/docs/governance.md`](https://github.com/alphaonedev/ai-memory-a2a-v0.6.3.1/blob/refactor/first-principles-governance/docs/governance.md) and the per-release A2A campaigns that follow it. |
 | Existing methodology | [`docs/methodology.md`](methodology.md) and [`docs/phases/`](phases/) describe **what** each phase measures. This document describes **why**, under First-Principles. The two are non-overlapping; the methodology page wins on mechanics, this page wins on governance posture. |
 | Document audience | Release-train operator, NHI Orchestrator running per-release A2A campaigns, external auditors. |
@@ -252,7 +252,7 @@ The `nhi_verdict: null` contract in particular is **load-bearing** for downstrea
 
 ## 11. References
 
-- Canonical First-Principles document (in flight): `<placeholder: ai2ai-gate#TBD>` — `ai-memory-ai2ai-gate/docs/governance/META-GOVERNANCE.md`.
+- Canonical First-Principles document: [ai2ai-gate#70](https://github.com/alphaonedev/ai-memory-ai2ai-gate/pull/70) — [`docs/governance/META-GOVERNANCE.md`](https://github.com/alphaonedev/ai-memory-ai2ai-gate/blob/refactor/canonical-first-principles-governance/docs/governance/META-GOVERNANCE.md). Pin a specific SHA in this document once that PR is merged.
 - Per-release A2A v0.6.3.1 instantiation: [`ai-memory-a2a-v0.6.3.1/docs/governance.md`](https://github.com/alphaonedev/ai-memory-a2a-v0.6.3.1/blob/refactor/first-principles-governance/docs/governance.md), authored in [PR #2](https://github.com/alphaonedev/ai-memory-a2a-v0.6.3.1/pull/2).
 - ship-gate methodology: [`docs/methodology.md`](methodology.md).
 - ship-gate phase pages: [`docs/phases/phase1.md`](phases/phase1.md), [`phase2.md`](phases/phase2.md), [`phase3.md`](phases/phase3.md), [`phase4.md`](phases/phase4.md).
