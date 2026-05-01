@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://alphaonedev.github.io/ai-memory-ship-gate/releases/schema.json",
   "title": "ship-gate release summary",
-  "description": "Release-blocking schema for releases/<version>/summary.json. The landing page reads the highest-semver summary.json in releases/ as 'current'. Validated by .github/workflows/release-summary-gate.yml on every v* tag push.",
+  "description": "Release-blocking schema for releases/<version>/summary.json. The landing page reads the highest-semver summary.json in releases/ as 'current'. Validated by .github/workflows/release-summary-gate.yml on every v* tag push. ship-gate is a substrate-only gate (see docs/governance.md): the top-level `verdict` field carries the substrate four-phase verdict, and `nhi_verdict` is the parallel field for the NHI behavioral verdict. ship-gate never sets `nhi_verdict` to anything other than null — the NHI verdict for a given release is provided by the per-release A2A campaign that runs after ship-gate passes. Keeping the field present (with null) makes this schema parallel with the per-release A2A campaign's release surface so consumers can read either schema without crashing on a missing field.",
   "type": "object",
   "required": [
     "version",
@@ -24,6 +24,10 @@
     "pass_count":       { "type": "integer", "minimum": 0 },
     "fail_count":       { "type": "integer", "minimum": 0 },
     "verdict":          { "type": "string", "enum": ["pass", "fail"] },
+    "nhi_verdict": {
+      "description": "NHI (utility) verdict for this release. ship-gate is substrate-only and ALWAYS emits null here. The non-null NHI verdict for a release is published by the per-release A2A campaign (ai-memory-a2a-v<release>) after ship-gate passes. Keeping this field present in the ship-gate schema (with null) keeps the schema parallel with the per-release A2A campaign's release surface so cross-layer consumers (test-hub aggregator, external auditors) can read either source without branching on a missing field. See docs/governance.md.",
+      "type": "null"
+    },
     "headline":         { "type": "string" },
     "phases": {
       "type": "array",
