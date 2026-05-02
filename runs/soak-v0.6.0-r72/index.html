@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campaign soak-v0.6.0-r72 — ai-memory ship-gate</title>
+  <meta name="description" content="AI NHI analysis + per-phase evidence for ai-memory-mcp ship-gate campaign soak-v0.6.0-r72 (ref v0.6.0).">
+  <style>
+    :root {
+      --fg: #1a1a1a; --bg: #fff; --muted: #666;
+      --pass: #1a8b3c; --fail: #b32222; --pass-bg: #e6f6ea; --fail-bg: #fceaea;
+      --border: #e0e0e0; --code-bg: #f7f7f9; --accent: #3952c8; --accent-bg: #eef1fd;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #eaeaea; --bg: #181818; --muted: #a0a0a0;
+        --pass: #4adc76; --fail: #ff6a6a; --pass-bg: #153d23; --fail-bg: #401818;
+        --border: #2a2a2a; --code-bg: #202028; --accent: #8da3ff; --accent-bg: #1c2140;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    header p.crumb { color: var(--muted); font-size: 13px; margin: 0 0 .25rem; }
+    h1 { margin: .25rem 0 .75rem; font-size: 1.85rem; }
+    h2 { margin: 1.75rem 0 .5rem; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+    h3 { margin: 1.25rem 0 .4rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+    h4 { margin: .5rem 0 .25rem; font-size: 1rem; }
+    dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+    dl.meta dt { color: var(--muted); }
+    dl.meta dd { margin: 0; }
+    .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
+    .badge.pass { color: var(--pass); background: var(--pass-bg); }
+    .badge.fail { color: var(--fail); background: var(--fail-bg); }
+    .phase-purpose { font-size: 14px; color: var(--muted); margin: .25rem 0 .75rem; padding: .35rem .75rem; border-left: 3px solid var(--border); background: var(--code-bg); border-radius: 0 4px 4px 0; }
+    .phase-purpose strong { color: var(--fg); }
+    .run-focus { background: var(--code-bg); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0; }
+    .run-focus h2 { border: none; margin: 0 0 .5rem; padding: 0; font-size: 1.1rem; }
+    .run-focus p { margin: .3rem 0; }
+    .run-focus p.label { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight { background: var(--accent-bg); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; border-left: 4px solid var(--accent); }
+    .ai-insight h2 { border: none; padding: 0; margin-top: .25rem; }
+    .ai-insight p.tag { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin: 0 0 .25rem; }
+    .ai-insight p.verdict { font-size: 1.05rem; margin: .5rem 0 1rem; }
+    .audiences { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-top: .5rem; }
+    @media (min-width: 720px) { .audiences { grid-template-columns: repeat(3, 1fr); } }
+    .audiences article { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .85rem 1rem; }
+    .audiences article h4 { margin-top: 0; color: var(--accent); font-size: 14px; letter-spacing: .02em; }
+    .audiences article p { margin: .25rem 0 0; font-size: 14px; }
+    ol.bugs { margin: .5rem 0; padding-left: 1.25rem; }
+    ol.bugs > li { margin-bottom: .75rem; }
+    ol.bugs p.bug-title { font-weight: 600; margin: .25rem 0; }
+    ol.bugs p.bug-field { margin: .25rem 0; font-size: 14px; }
+    ol.bugs ul.bug-fixes { margin: .25rem 0 .5rem 1rem; padding: 0; list-style: disc; font-size: 14px; }
+    ul.checklist { list-style: none; padding: 0; margin: .25rem 0 .75rem; }
+    ul.checklist li { padding: .2rem 0 .2rem 0; font-size: 14px; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+    ul.checklist li .check { display: inline-block; width: 1.25rem; text-align: center; font-weight: 700; font-size: 15px; }
+    ul.checklist li.pass .check { color: var(--pass); }
+    ul.checklist li.fail .check { color: var(--fail); }
+    ul.checklist li.fail { background: var(--fail-bg); border-radius: 4px; padding-left: .35rem; padding-right: .35rem; }
+    table.cycle-table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    table.cycle-table th, table.cycle-table td { padding: .2rem .6rem; text-align: right; border-bottom: 1px solid var(--border); }
+    table.cycle-table th:first-child, table.cycle-table td:first-child { text-align: left; }
+    table.cycle-table th { background: var(--code-bg); font-weight: 600; }
+    details { border: 1px solid var(--border); border-radius: 6px; padding: .25rem .75rem; margin: .5rem 0; }
+    details[open] { padding-bottom: .5rem; }
+    summary { cursor: pointer; padding: .45rem 0; font-weight: 500; }
+    pre { background: var(--code-bg); padding: .75rem; border-radius: 6px; overflow-x: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--muted); font-size: 14px; }
+    footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="crumb"><a href="../">../ runs index</a> &middot; <a href="https://alphaonedev.github.io/ai-memory-ship-gate/runs/soak-v0.6.0-r72/">rendered on Pages</a></p>
+      <h1>Campaign soak-v0.6.0-r72 <span class="badge fail">FAIL</span></h1>
+      <dl class="meta">
+        <dt>ai-memory ref</dt><dd><code>v0.6.0</code></dd>
+        <dt>Completed at</dt><dd>2026-05-02T16:30:25Z</dd>
+        <dt>Overall pass</dt><dd>FAIL</dd>
+      </dl>
+    </header>
+      <section class="ai-insight">
+        <h2>AI NHI analysis</h2>
+        <p class="muted">No per-campaign narrative recorded for this run. The workflow appends entries to <code>analysis/run-insights.json</code> as each campaign completes; older runs that predate the automation show this placeholder. Raw evidence below is unaffected.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 1 — functional (per-node) <span class="badge fail">NOT RUN</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> Single-node CRUD, backup, curator dry-run, and MCP handshake on each of the three peer droplets. Establishes that ai-memory starts and is functional at the one-node level before federation is exercised.</p>
+        <p class="muted">This phase produced no artifact in this campaign. Either the campaign was an older shape that predates this phase's scripting, or the artifact commit step never landed this file on main. Raw evidence, if any, is linked below.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 2 — multi-agent federation <span class="badge fail">NOT RUN</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 4 agents × 50 writes against the 3-node federation with W=2 quorum, then 90s settle and convergence count on every peer. Plus two quorum probes (one-peer-down must 201, both-peers-down must 503). Catches silent-data-loss and quorum-misclassification regressions.</p>
+        <p class="muted">This phase produced no artifact in this campaign. Either the campaign was an older shape that predates this phase's scripting, or the artifact commit step never landed this file on main. Raw evidence, if any, is linked below.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 3 — cross-backend migration <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> 1000-memory round-trip: SQLite → Postgres, re-run for idempotency, Postgres → SQLite. Asserts zero errors and counts match. Catches migration-correctness regressions in either direction of a production upgrade path.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
+      </section>
+      <section class="phase">
+        <h2>Phase 4 — chaos campaign <span class="badge fail">NOT REACHED</span></h2>
+        <p class="phase-purpose"><strong>What this phase proves:</strong> packaging/chaos/run-chaos.sh on the chaos-client droplet with 50 cycles × 100 writes per fault class. Measures convergence_bound = min(count_node1, count_node2) / total_ok. Catches fault-tolerance regressions under SIGKILL of the primary, brief network partition, and related fault models.</p>
+        <p class="muted">This phase did not run because an earlier phase failed and the campaign aborted. Evidence from the phases that did run is above; the protocol would have exercised this phase next if the prior step had passed.</p>
+      </section>
+    <section>
+      <h2>All artifacts</h2>
+      <p class="muted">Every JSON committed to this campaign directory. Raw, machine-readable, and stable.</p>
+      <ul>
+        <li><a href="./campaign-summary.json">campaign-summary.json</a></li>
+      </ul>
+    </section>
+    <footer>
+      Generated by <code>scripts/generate_run_html.sh</code>.
+      Campaign directory:
+      <a href="https://github.com/alphaonedev/ai-memory-ship-gate/tree/main/runs/soak-v0.6.0-r72">
+        alphaonedev/ai-memory-ship-gate/runs/soak-v0.6.0-r72
+      </a>.
+      Methodology:
+      <a href="https://alphaonedev.github.io/ai-memory-ship-gate/methodology/">
+        alphaonedev.github.io/ai-memory-ship-gate/methodology
+      </a>.
+      Analysis data source: <code>analysis/run-insights.json</code>.
+    </footer>
+  </main>
+</body>
+</html>
